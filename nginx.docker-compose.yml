@@ -1,0 +1,17 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: daios_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # После certbot раскомментировать:
+      # - /etc/letsencrypt:/etc/letsencrypt:ro
+
+networks:
+  default:
+    name: internal_service_network
+    external: true

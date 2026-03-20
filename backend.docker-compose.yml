@@ -1,0 +1,72 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: ${CONTAINER_API}
+    restart: unless-stopped
+    env_file: ${ENV_FILE:-.env}
+    environment:
+      DOCKER: "true"
+      DB_HOST: ${DB_HOST}
+      DB_PORT: 5432
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: 6379
+      PYTHONPATH: /app
+    ports:
+      - "${PORT_API}:8000"
+    networks:
+      - internal_service_network
+      - local_infra
+    volumes:
+      - .:/app
+      # - ./migrations:/app/migrations
+
+  bot:
+    build:
+      context: .
+      dockerfile: docker/bot/Dockerfile
+    container_name: ${CONTAINER_BOT}
+    restart: unless-stopped
+    env_file: ${ENV_FILE:-.env}
+    environment:
+      DOCKER: "true"
+      DB_HOST: ${DB_HOST}
+      DB_PORT: 5432
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: 6379
+      PYTHONPATH: /app
+    networks:
+      - internal_service_network
+      - local_infra
+    volumes:
+      - .:/app
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/scheduler/Dockerfile
+    container_name: ${CONTAINER_SCHEDULER}
+    restart: unless-stopped
+    env_file: ${ENV_FILE:-.env}
+    environment:
+      DOCKER: "true"
+      DB_HOST: ${DB_HOST}
+      DB_PORT: 5432
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: 6379
+      PYTHONPATH: /app
+    networks:
+      - internal_service_network
+      - local_infra
+    volumes:
+      - .:/app
+
+networks:
+  internal_service_network:
+    name: internal_service_network
+    external: true
+  local_infra:
+    name: local_infra
+    external: true
+  

@@ -1,0 +1,105 @@
+# -----------------------------------------------------------
+# OS & System Files
+# -----------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# -----------------------------------------------------------
+# IDE & Editors
+# -----------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# -----------------------------------------------------------
+# Environment & Secrets (CRITICAL)
+# -----------------------------------------------------------
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.pem
+*.key
+
+# -----------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------
+# Node.js (Front & Back)
+**/node_modules/
+
+# Python (Back)
+**/venv/
+**/env/
+**/.venv/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Go (Back)
+**/vendor/
+
+# Java (Back)
+**/target/
+*.jar
+*.war
+
+# -----------------------------------------------------------
+# Build & Dist Artifacts
+# -----------------------------------------------------------
+# Frontend Builds
+front/dist/
+front/build/
+front/.next/
+front/out/
+
+# Backend Builds
+back/dist/
+back/build/
+back/bin/
+back/obj/
+
+# -----------------------------------------------------------
+# Logs & Database
+# -----------------------------------------------------------
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/.sqlite
+**/*.sqlite3
+**/db.sqlite3
+
+# -----------------------------------------------------------
+# Testing & Coverage
+# -----------------------------------------------------------
+**/coverage/
+**/.nyc_output/
+**/*.cover
+**/.husky/
+
+# -----------------------------------------------------------
+# Docker
+# -----------------------------------------------------------
+# Usually you don't ignore docker-compose files, 
+# but ignore specific local override files if needed
+docker-compose.override.yml
+
+.claude
+/secrets
+CONTEXT.md

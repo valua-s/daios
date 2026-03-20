@@ -1,0 +1,15 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend/Dockerfile
+    container_name: ${CONTAINER_FRONTEND}
+    restart: unless-stopped
+    env_file: ${ENV_FILE:-.env}
+    ports:
+      - "${PORT_FRONTEND}:3000"
+
+networks:
+  default:
+    name: internal_service_network
+    external: true

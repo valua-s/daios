@@ -1,0 +1,10 @@
+{
+  "name": "DAIOS",
+  "short_name": "DAIOS",
+  "description": "Персональный AI-оператор дня",
+  "start_url": "/today",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "icons": []
+}

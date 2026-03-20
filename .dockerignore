@@ -1,0 +1,68 @@
+# -----------------------------------------------------------
+# Git & Version Control
+# -----------------------------------------------------------
+.git
+.gitignore
+.github/
+
+# -----------------------------------------------------------
+# Documentation & Misc
+# -----------------------------------------------------------
+README.md
+LICENSE
+docs/
+*.md
+
+# -----------------------------------------------------------
+# Environment & Secrets (Security)
+# -----------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# -----------------------------------------------------------
+# Dependencies (Let Docker install them)
+# -----------------------------------------------------------
+# It is best practice to NOT copy local node_modules into the image
+**/node_modules/
+
+# Python virtual environments
+**/venv/
+**/env/
+**/.venv/
+**/__pycache__/
+
+# -----------------------------------------------------------
+# Build Artifacts (Let Docker build them)
+# -----------------------------------------------------------
+front/dist/
+front/build/
+back/dist/
+back/build/
+
+# -----------------------------------------------------------
+# IDE & OS
+# -----------------------------------------------------------
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# -----------------------------------------------------------
+# Testing (Optional: Exclude to reduce image size)
+# -----------------------------------------------------------
+**/tests/
+**/__tests__/
+**/*.test.js
+**/*.spec.js
+**/coverage/
+
+# -----------------------------------------------------------
+# Docker Files (Avoid recursive copies)
+# -----------------------------------------------------------
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+.dockerignore

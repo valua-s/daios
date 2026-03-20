@@ -1,0 +1,211 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0f0f0f;
+  --color-surface: #181818;
+  --color-border: #2a2a2a;
+  --color-muted: #555;
+  --color-text: #e8e8e8;
+  --color-text-dim: #888;
+  --color-accent: #7c6aff;
+  --color-accent-hover: #6b59ee;
+  --color-done: #3a9e6a;
+  --color-pending: #d97706;
+  --color-danger: #e05252;
+}
+
+/* ── Fluid typography ── */
+
+html {
+  font-size: clamp(12px, 1.1vw + 6px, 16px);
+}
+
+/* ── Layout ── */
+
+.layout-root {
+  display: flex;
+  min-height: 100vh;
+}
+
+.layout-sidebar {
+  width: 220px;
+  background: #111;
+  border-right: 1px solid #2a2a2a;
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.layout-main {
+  flex: 1;
+  padding: 32px 40px;
+  overflow-y: auto;
+}
+
+.today-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr 260px;
+  gap: 20px;
+  align-items: stretch;
+  margin-bottom: 20px;
+}
+
+/* ── Mobile/desktop toggles ── */
+
+.stats-desktop {
+  display: contents;
+}
+
+.stats-mobile {
+  display: none;
+}
+
+/* ── Mobile header ── */
+
+.mobile-header {
+  display: none;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+/* ── Burger button ── */
+
+.burger-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.burger-btn span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #e8e8e8;
+  border-radius: 2px;
+}
+
+/* ── Intermediate (tablet / narrow desktop) ── */
+
+@media (max-width: 900px) and (min-width: 769px) {
+  .today-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .today-date-card {
+    display: none;
+  }
+}
+
+/* ── Mobile ── */
+
+@media (max-width: 768px) {
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: #111;
+    border-bottom: 1px solid #2a2a2a;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 110;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+
+  .sidebar-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .layout-root {
+    flex-direction: column;
+  }
+
+  .layout-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 240px;
+    z-index: 120;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    border-right: 1px solid #2a2a2a;
+    padding-top: 32px;
+  }
+
+  .layout-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .layout-main {
+    padding: 16px;
+  }
+
+  .today-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .today-date-card {
+    display: none !important;
+  }
+
+  .focus-month {
+    display: none;
+  }
+
+  .stats-desktop {
+    display: none;
+  }
+
+  .stats-mobile {
+    display: block;
+  }
+
+  .col-status {
+    display: none;
+  }
+
+  /* backlog */
+  .col-reason,
+  .col-added {
+    display: none;
+  }
+
+  /* workouts */
+  .col-type,
+  .col-duration {
+    display: none;
+  }
+
+  /* focus */
+  .focus-history {
+    display: none;
+  }
+
+  .focus-forms-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
