@@ -35,6 +35,7 @@ dependencies = [
     "google-auth>=2.29",
     "beautifulsoup4>=4.12",
     "dishka>=1.9.1",
+    "valkey>=6.1.1",
 ]
 
 [project.optional-dependencies]
