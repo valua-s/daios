@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import ssl
-
 import aiohttp
+
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
@@ -32,21 +32,17 @@ BOT_COMMANDS = [
     BotCommand(command="help", description="Список команд"),
 ]
 
+class CustomAiohttpSession(AiohttpSession):
+    def __init__(self, ssl_context):
+        super().__init__()
+        self._ssl = ssl_context
 
-def create_bot() -> Bot:
-    ssl_context = ssl.create_default_context()
-    ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_NONE
-    session = AiohttpSession(
-        connector=aiohttp.TCPConnector,
-        connector_kwargs={"ssl": ssl_context},
-    )
-    return Bot(
-        token=settings.telegram_bot_token,
-        session=session,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-    )
-
+    async def create_session(self) -> aiohttp.ClientSession:
+        return aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(ssl=self._ssl),
+            cookie_jar=aiohttp.DummyCookieJar(),
+            timeout=aiohttp.ClientTimeout(total=60, connect=5),
+        )
 
 def create_dispatcher() -> Dispatcher:
     storage = RedisStorage(redis=redis_client)
@@ -66,18 +62,28 @@ def create_dispatcher() -> Dispatcher:
 
 
 async def main() -> None:
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    session = CustomAiohttpSession(ssl_context=ssl_context)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
     logger.info("Starting DAIOS bot...")
-
-    bot = create_bot()
+    bot = Bot(
+        token=settings.telegram_bot_token,
+        session=session,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
     dp = create_dispatcher()
 
     await bot.set_my_commands(BOT_COMMANDS)
     await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+    try:
+        await dp.start_polling(bot)
+    finally: 
+        await session.close()
 
 
 if __name__ == "__main__":

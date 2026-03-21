@@ -1,4 +1,4 @@
-const API_URL = process.env.API_URL ?? 'http://localhost:12001'
+const API_URL = process.env.API_URL ?? 'http://daios-api:8000'
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   let res: Response
