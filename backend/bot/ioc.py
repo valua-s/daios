@@ -16,6 +16,7 @@ from aiogram.fsm.storage.memory import SimpleEventIsolation
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import LinkPreviewOptions
 from aiohttp import ClientSession, ClientTimeout, DummyCookieJar, TCPConnector
+from aiohttp_socks import ProxyConnector
 from dishka import FromComponent, Provider, Scope, provide
 
 from backend.bot.tg_http import RetryAiohttpSession
@@ -32,10 +33,14 @@ class MainProvider(Provider):
     async def http_session(
         self, ssl: Annotated[HttpSsl, FromComponent("ssl")]
     ) -> AsyncIterator[ClientSession]:
+        if settings.telegram_socks_proxy:
+            connector = ProxyConnector.from_url(settings.telegram_socks_proxy, ssl=ssl)
+        else:
+            connector = TCPConnector(ssl=ssl)
         async with ClientSession(
-            connector=TCPConnector(ssl=ssl),
+            connector=connector,
             cookie_jar=DummyCookieJar(),
-            timeout=ClientTimeout(total=60, connect=5),
+            timeout=ClientTimeout(total=20, connect=5),
         ) as s:
             yield s
 

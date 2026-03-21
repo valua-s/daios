@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     minio_secure: bool = False
 
     # Telegram
+    telegram_socks_proxy: str = ""
     telegram_bot_token: str = Field(..., description="Bot token from @BotFather")
     telegram_user_id: int = Field(..., description="Your numeric Telegram user ID")
 

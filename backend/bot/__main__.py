@@ -37,7 +37,7 @@ async def main() -> None:
         AppProvider(),
         ioc.MainProvider(),
         ioc.AiogramProvider(),
-        ioc.SslProvider(),
+        ioc.NoSslProvider(),
     ) as container:
         bot = await container.get(Bot, component="aiogram")
         dp = await container.get(Dispatcher, component="aiogram")
