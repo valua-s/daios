@@ -45,11 +45,12 @@ async def main() -> None:
         setup_dishka(container, dp)
         dp.message.middleware(OwnerOnlyMiddleware())
         dp.callback_query.middleware(OwnerOnlyMiddleware())
-
-        dp.include_router(common.router)
-        dp.include_router(focus.router)
-        dp.include_router(tasks.router)
-        dp.include_router(workout.router)
+        dp.include_routers(
+            common.router,
+            focus.router,
+            tasks.router,
+            workout.router,
+        )
 
         await bot.set_my_commands(BOT_COMMANDS)
         await bot.delete_webhook(drop_pending_updates=True)
