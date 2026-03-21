@@ -8,7 +8,7 @@ from functools import partial
 from typing import Annotated, Literal, override
 
 import certifi
-import valkey.asyncio as redis
+import valkey.asyncio as valkey
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.base import DefaultKeyBuilder
@@ -18,11 +18,11 @@ from aiogram.types import LinkPreviewOptions
 from aiohttp import ClientSession, ClientTimeout, DummyCookieJar, TCPConnector
 from dishka import FromComponent, Provider, Scope, provide
 
-from backend.core.config import settings
 from backend.bot.tg_http import RetryAiohttpSession
+from backend.core.config import settings
 
 type HttpSsl = ssl.SSLContext | Literal[False]
-type RedisFactory = partial[redis.Redis]
+type RedisFactory = partial[valkey.Redis]
 
 
 class MainProvider(Provider):
@@ -41,12 +41,12 @@ class MainProvider(Provider):
 
     @provide
     async def redis_factory(self) -> AsyncIterator[RedisFactory]:
-        pool = redis.ConnectionPool(
+        pool = valkey.ConnectionPool(
             host=settings.redis_host,
             port=settings.redis_port,
         )
         try:
-            yield partial(redis.Redis, connection_pool=pool)
+            yield partial(valkey.Redis, connection_pool=pool)
         finally:
             await pool.aclose()
 
@@ -69,10 +69,10 @@ class AiogramProvider(Provider):
         )
 
     @provide(cache=False)
-    def dispatcher(self, redis: redis.Redis) -> Dispatcher:
+    def dispatcher(self, redis_client: valkey.Redis) -> Dispatcher:
         return Dispatcher(
             storage=RedisStorage(
-                redis,  # type: ignore[arg-type]
+                redis_client,  # type: ignore[arg-type]
                 key_builder=DefaultKeyBuilder(with_destiny=True),
                 state_ttl=604000,
                 data_ttl=604000,
@@ -81,8 +81,8 @@ class AiogramProvider(Provider):
         )
 
     @provide(cache=False)
-    async def redis(self) -> AsyncIterator[redis.Redis]:
-        async with redis.Redis(
+    async def redis_client(self) -> AsyncIterator[valkey.Redis]:
+        async with valkey.Redis(
             host=settings.redis_host, port=settings.redis_port,
         ) as r:
             yield r

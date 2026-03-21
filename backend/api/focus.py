@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from litestar import Controller, get, put
-from litestar.exceptions import NotFoundException
 from dishka.integrations.litestar import FromDishka
+from litestar import Controller, get, put
 
 from backend.api.schemas import FocusDTO, SetFocusRequest
 from backend.models.focus import Focus

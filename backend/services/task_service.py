@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from datetime import date, time, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.backlog import BacklogItem
-from backend.models.task import Task, TaskStatus, TaskPriority
+from backend.models.task import Task, TaskPriority, TaskStatus
 from backend.repositories.backlog_repo import BacklogRepository
 from backend.repositories.task_repo import TaskRepository
 

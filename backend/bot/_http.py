@@ -66,7 +66,7 @@ def calculate_retry_timeout(
         )
     sleep_seconds = 0.5 * (2**attempt)
     jitter = 1 - 0.25 * random()
-    return max(0, sleep_seconds * jitter)  # type: ignore[no-any-return]
+    return max(0, sleep_seconds * jitter)
 
 
 async def request(

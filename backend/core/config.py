@@ -74,11 +74,11 @@ class Settings(BaseSettings):
     news_api_key: str = Field("", description="NewsAPI.org API key")
 
     # ── Вычисляемые поля ────────────────────────────────────────────────
-    
+
     @property
     def minio_endpoint(self) -> str:
         return f"{self.minio_host}:{self.minio_port}"
-    
+
     @computed_field
     @property
     def database_url(self) -> URL:

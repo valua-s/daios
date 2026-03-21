@@ -24,8 +24,6 @@ class UpdateScheduleRequest:
     enabled: bool
 
 
-
-
 def _to_response(dto: ScheduleDTO) -> ScheduleResponseDTO:
     return ScheduleResponseDTO(
         event_name=dto.event_name,

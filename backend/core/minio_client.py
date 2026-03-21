@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import logging
+
 from minio import Minio
 
 from backend.core.config import settings
-
-import logging
 
 logger = logging.getLogger(__name__)
 

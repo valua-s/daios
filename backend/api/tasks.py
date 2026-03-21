@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from dishka.integrations.litestar import FromDishka
 from litestar import Controller, delete, get, patch, post
 from litestar.exceptions import NotFoundException
-from dishka.integrations.litestar import FromDishka
 
-from backend.api.schemas import TaskDTO, CreateTaskRequest
+from backend.api.schemas import CreateTaskRequest, TaskDTO
 from backend.models.task import Task
 from backend.services.task_service import TaskService
 

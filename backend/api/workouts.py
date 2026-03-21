@@ -8,7 +8,7 @@ from litestar import Controller, get
 
 from backend.services.workout_service import WorkoutService
 
-DAYS_RU = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+DAYS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
 
 
 @dataclass
@@ -23,9 +23,9 @@ class WorkoutDTO:
 
 
 class WorkoutController(Controller):
-    path = '/api/workouts'
+    path = "/api/workouts"
 
-    @get('/week')
+    @get("/week")
     async def get_week(
         self,
         workout_service: FromDishka[WorkoutService],
@@ -40,8 +40,8 @@ class WorkoutController(Controller):
             result.append(WorkoutDTO(
                 day=DAYS_RU[i],
                 date=d.isoformat(),
-                type=plan.type if plan else 'rest',
-                description=plan.description if plan else '—',
+                type=plan.type if plan else "rest",
+                description=plan.description if plan else "—",
                 duration_minutes=plan.duration_minutes if plan else 0,
                 is_today=d == today,
                 details=plan.details if plan else {},

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 from aiogram import Router
 from aiogram.filters import Command
@@ -19,7 +22,7 @@ class SetFocusState(StatesGroup):
     waiting_for_description = State()
 
 
-def _period_keyboard() -> any:
+def _period_keyboard() -> Any:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="📅 Неделя", callback_data="focus:period:week"),

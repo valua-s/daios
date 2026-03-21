@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from typing import Any
@@ -7,7 +9,12 @@ from apscheduler.triggers.cron import CronTrigger
 from dishka import make_async_container
 
 from backend.core.providers import AppProvider
-from backend.scheduler.jobs import make_collect_content, make_evening_summary, make_morning_brief, make_sync_workouts
+from backend.scheduler.jobs import (
+    make_collect_content,
+    make_evening_summary,
+    make_morning_brief,
+    make_sync_workouts,
+)
 
 logger = logging.getLogger(__name__)
 

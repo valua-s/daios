@@ -4,14 +4,14 @@ import asyncio
 
 import uvicorn
 from dishka import make_async_container
-from dishka.integrations.litestar import setup_dishka, DishkaRouter
+from dishka.integrations.litestar import DishkaRouter, setup_dishka
 from litestar import Litestar, get
 from litestar.config.cors import CORSConfig
 
 from backend.api.backlog import BacklogController
 from backend.api.focus import FocusController
-from backend.api.tasks import TaskController
 from backend.api.settings import SettingsController
+from backend.api.tasks import TaskController
 from backend.api.workouts import WorkoutController
 from backend.core.config import settings
 from backend.core.minio_client import ensure_bucket
