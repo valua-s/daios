@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: ${CONTAINER_DB}
+    container_name: ${DB_HOST}
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -21,7 +21,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: ${CONTAINER_REDIS}
+    container_name: ${REDIS_HOST}
     restart: unless-stopped
     ports:
       - "${PORT_REDIS}:6379"
@@ -37,7 +37,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: ${CONTAINER_MINIO}
+    container_name: ${MINIO_HOST}
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
