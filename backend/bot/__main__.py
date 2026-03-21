@@ -38,7 +38,7 @@ def create_bot() -> Bot:
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
     connector = aiohttp.TCPConnector(ssl=ssl_context)
-    session = AiohttpSession(connector=connector)
+    session = AiohttpSession(connector=lambda: connector)
     return Bot(
         token=settings.telegram_bot_token,
         session=session,
