@@ -29,12 +29,14 @@ dependencies = [
     "python-dotenv>=1.0",
     # HTTP client
     "httpx>=0.27",
+    "aiohttp-socks>=0.8",
     # Integrations
     "feedparser>=6.0",
     "gspread>=6.1",
     "google-auth>=2.29",
     "beautifulsoup4>=4.12",
     "dishka>=1.9.1",
+    "valkey>=6.1.1",
 ]
 
 [project.optional-dependencies]

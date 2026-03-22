@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import delete as sa_delete
-from sqlalchemy import select
+from sqlalchemy import delete as sa_delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 

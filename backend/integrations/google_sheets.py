@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import re
 from datetime import date
@@ -26,8 +28,7 @@ STRENGTH_AVG = (STRENGTH_MIN + STRENGTH_MAX) / 2  # 25 мин
 
 
 class GoogleSheetsClient(BaseIntegration):
-    """
-    Читает расписание тренировок из Google Sheets.
+    """Читает расписание тренировок из Google Sheets.
     Лист "BY GPT": строки — недели (1-16), столбцы — дни недели.
     Первый столбец — номер недели в году.
     """
@@ -41,8 +42,7 @@ class GoogleSheetsClient(BaseIntegration):
         self._spreadsheet_id = settings.google_sheets_workout_id
 
     async def get_workout_for_date(self, target_date: date) -> dict | None:
-        """
-        Возвращает сырые данные тренировки для конкретной даты.
+        """Возвращает сырые данные тренировки для конкретной даты.
         Ищет нужную неделю по номеру ISO-недели года, затем берёт нужный день.
         """
         week_number = target_date.isocalendar().week
@@ -98,8 +98,7 @@ class GoogleSheetsClient(BaseIntegration):
 
 
 def parse_workout_text(raw: str) -> dict:
-    """
-    Парсит текст ячейки в структурированный словарь.
+    """Парсит текст ячейки в структурированный словарь.
 
     Примеры входных строк:
       "Отдых + мобилити"
@@ -142,14 +141,13 @@ def parse_workout_text(raw: str) -> dict:
             "total_km": total_km,
             "run_minutes": run_minutes,
             "strength_minutes": int(strength_minutes),
-            "pace_range": f"{PACE_MIN:.0f}:{int((PACE_MIN % 1)*60):02d}–{PACE_MAX:.0f}:{int((PACE_MAX % 1)*60):02d} мин/км",
+            "pace_range": f"{PACE_MIN:.0f}:{int((PACE_MIN % 1) * 60):02d}–{PACE_MAX:.0f}:{int((PACE_MAX % 1) * 60):02d} мин/км",
         },
     }
 
 
 def _extract_total_km(text: str) -> float:
-    """
-    Суммирует все упоминания километров в строке.
+    """Суммирует все упоминания километров в строке.
     "8 км Z2 + 4×20″ (1:40 бег)" → 8.0
     "Силовая + легкий бег(5км)"   → 5.0
     "12 км: 8 км Z2 + ..."        → берём первое (общее) число

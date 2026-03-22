@@ -4,23 +4,26 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.repositories.settings_repo import ScheduleRepository, UserSettingRepository
+from backend.repositories.settings_repo import (
+    ScheduleRepository,
+    UserSettingRepository,
+)
 
 _DELETED = "__deleted__"
 
 DEFAULT_INTERESTS: dict[str, bool] = {
-    "python":    True,
-    "ai":        True,
-    "running":   True,
+    "python": True,
+    "ai": True,
+    "running": True,
     "economics": True,
-    "politics":  False,
+    "politics": False,
 }
 
 DEFAULT_SCHEDULES: list[dict] = [
-    {"event_name": "morning_brief",  "cron_expr": "30 6 * * *",  "enabled": True,  "description": "Утренняя сводка"},
-    {"event_name": "evening_summary","cron_expr": "0 22 * * *",  "enabled": True,  "description": "Вечерний итог"},
-    {"event_name": "collect_content","cron_expr": "0 6 * * *",   "enabled": True,  "description": "Сбор контента"},
-    {"event_name": "sync_workouts",  "cron_expr": "0 6,17 * * *","enabled": True,  "description": "Синхронизация тренировок"},
+    {"event_name": "morning_brief", "cron_expr": "30 6 * * *", "enabled": True, "description": "Утренняя сводка"},
+    {"event_name": "evening_summary", "cron_expr": "0 22 * * *", "enabled": True, "description": "Вечерний итог"},
+    {"event_name": "collect_content", "cron_expr": "0 6 * * *", "enabled": True, "description": "Сбор контента"},
+    {"event_name": "sync_workouts", "cron_expr": "0 6,17 * * *", "enabled": True, "description": "Синхронизация тренировок"},
 ]
 
 

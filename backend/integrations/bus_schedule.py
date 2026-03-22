@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime, time
 
 import httpx
@@ -20,7 +22,7 @@ class BusScheduleParser(BaseIntegration):
 
     Ищет рейсы по маршруту: содержит оба слова из фильтра.
     """
-    
+
     def __init__(self, http_client: httpx.AsyncClient) -> None:
         self._http = http_client
 

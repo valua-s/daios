@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import logging
 from datetime import date, time
+from typing import Any
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -9,7 +12,11 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from dishka.integrations.aiogram import FromDishka, inject
 
-from backend.bot.keyboards import backlog_action_keyboard, task_action_keyboard, task_list_keyboard
+from backend.bot.keyboards import (
+    backlog_action_keyboard,
+    task_action_keyboard,
+    task_list_keyboard,
+)
 from backend.models.task import TaskStatus
 from backend.services.task_service import TaskService
 
@@ -22,7 +29,7 @@ class AddTaskState(StatesGroup):
     waiting_for_time = State()
 
 
-def _add_time_keyboard() -> any:
+def _add_time_keyboard() -> Any:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="⏭ Пропустить", callback_data="task:skip_time")
@@ -30,7 +37,7 @@ def _add_time_keyboard() -> any:
     return builder.as_markup()
 
 
-def _after_add_keyboard() -> any:
+def _after_add_keyboard() -> Any:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="➕ Добавить ещё", callback_data="task:add"),

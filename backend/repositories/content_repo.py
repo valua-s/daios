@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 
@@ -36,5 +36,5 @@ class ContentRepository(BaseRepository[ContentItem]):
         await self._session.execute(
             update(ContentItem)
             .where(ContentItem.id == item_id)
-            .values(status=ContentStatus.shown, shown_at=datetime.now(tz=timezone.utc))
+            .values(status=ContentStatus.shown, shown_at=datetime.now(tz=UTC))
         )

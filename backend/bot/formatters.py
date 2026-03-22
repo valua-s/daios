@@ -1,7 +1,8 @@
-"""
-Форматирование текстов Telegram-сообщений.
+"""Форматирование текстов Telegram-сообщений.
 Вынесено из handlers чтобы переиспользовать в scheduler.
 """
+from __future__ import annotations
+
 from datetime import date
 
 from backend.integrations.bus_schedule import BusArrival
@@ -56,7 +57,7 @@ def format_content_items(items: list[ContentItem]) -> str:
         icon = "▶️" if item.type == ContentType.video else "📄"
         duration = f" · {item.duration_minutes} мин" if item.duration_minutes else ""
         topic = f" [{item.topic}]" if item.topic else ""
-        lines.append(f"  {icon} <a href=\"{item.url}\">{item.title}</a>{duration}{topic}")
+        lines.append(f'  {icon} <a href="{item.url}">{item.title}</a>{duration}{topic}')
     return "\n".join(lines)
 
 
@@ -103,7 +104,7 @@ def format_morning_brief(
 
 def format_evening_summary(done: list[Task], pending: list[Task]) -> str:
     total = len(done) + len(pending)
-    lines = [f"🌙 <b>Итоги дня</b>\n"]
+    lines = ["🌙 <b>Итоги дня</b>\n"]
 
     if total == 0:
         lines.append("📋 Сегодня задач не было.")

@@ -34,13 +34,15 @@ class Settings(BaseSettings):
     redis_password: str = Field(..., description="Redis password")
 
     # Minio
-    minio_endpoint: str = "localhost:9000"
+    minio_host: str = "localhost"
+    minio_port: int = 9000
     minio_access_key: str = "daios_minio"
     minio_secret_key: str = Field(..., description="Minio secret key")
     minio_bucket_media: str = "daios-media"
     minio_secure: bool = False
 
     # Telegram
+    telegram_socks_proxy: str = ""
     telegram_bot_token: str = Field(..., description="Bot token from @BotFather")
     telegram_user_id: int = Field(..., description="Your numeric Telegram user ID")
 
@@ -73,6 +75,10 @@ class Settings(BaseSettings):
     news_api_key: str = Field("", description="NewsAPI.org API key")
 
     # ── Вычисляемые поля ────────────────────────────────────────────────
+
+    @property
+    def minio_endpoint(self) -> str:
+        return f"{self.minio_host}:{self.minio_port}"
 
     @computed_field
     @property
