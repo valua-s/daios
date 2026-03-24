@@ -26,5 +26,15 @@ class TaskRepository(BaseRepository[Task]):
         )
         return list(result.scalars().all())
 
+    async def get_by_date_range(
+        self, from_date: date, to_date: date
+    ) -> list[Task]:
+        result = await self._session.execute(
+            select(Task)
+            .where(Task.date >= from_date, Task.date <= to_date)
+            .order_by(Task.date, Task.priority.desc())
+        )
+        return list(result.scalars().all())
+
     async def mark_done(self, task_id: int) -> Task | None:
         return await self.update(task_id, status=TaskStatus.done)

@@ -4,6 +4,7 @@ import { backlogRouter } from './routes/backlog'
 import { workoutsRouter } from './routes/workouts'
 import { focusRouter } from './routes/focus'
 import { settingsRouter } from './routes/settings'
+import { calendarRouter } from './routes/calendar'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
@@ -19,8 +20,25 @@ app.get('/manifest.json', (c) => {
   return c.text(json, 200, { 'Content-Type': 'application/json' })
 })
 
+const API_URL = process.env.API_URL ?? 'http://daios_api:8000'
+
+// Proxy /api/* requests to backend (for client-side JS)
+app.all('/api/*', async (c) => {
+  const url = `${API_URL}${c.req.path}`
+  const res = await fetch(url, {
+    method: c.req.method,
+    headers: { 'Content-Type': 'application/json' },
+    body: ['GET', 'HEAD'].includes(c.req.method) ? undefined : await c.req.text(),
+  })
+  return new Response(res.body, {
+    status: res.status,
+    headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' },
+  })
+})
+
 app.get('/', (c) => c.redirect('/today'))
 app.route('/today', todayRouter)
+app.route('/calendar', calendarRouter)
 app.route('/backlog', backlogRouter)
 app.route('/workouts', workoutsRouter)
 app.route('/focus', focusRouter)

@@ -27,6 +27,16 @@ class CreateTaskRequest:
 
 
 @dataclass
+class UpdateTaskRequest:
+    title: str | None = None
+    date: date | None = None
+    scheduled_time: time | None = None
+    notes: str | None = None
+    clear_time: bool = False
+    clear_notes: bool = False
+
+
+@dataclass
 class BacklogItemDTO:
     id: int
     title: str

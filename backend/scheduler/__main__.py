@@ -8,6 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dishka import make_async_container
 
+from backend.core.config import settings
 from backend.core.providers import AppProvider
 from backend.scheduler.jobs import (
     make_collect_content,
@@ -18,11 +19,9 @@ from backend.scheduler.jobs import (
 
 logger = logging.getLogger(__name__)
 
-TIMEZONE = "Europe/Moscow"
-
 
 def create_scheduler(container: Any) -> AsyncIOScheduler:
-    scheduler = AsyncIOScheduler(timezone=TIMEZONE)
+    scheduler = AsyncIOScheduler(timezone=settings.app_timezone)
 
     sync_workouts_job = make_sync_workouts(container)
 
@@ -30,7 +29,7 @@ def create_scheduler(container: Any) -> AsyncIOScheduler:
     for hour in (6, 17):
         scheduler.add_job(
             sync_workouts_job,
-            trigger=CronTrigger(hour=hour, minute=0, timezone=TIMEZONE),
+            trigger=CronTrigger(hour=hour, minute=0, timezone=settings.app_timezone),
             id=f"sync_workouts_{hour:02d}",
             replace_existing=True,
         )
@@ -38,7 +37,7 @@ def create_scheduler(container: Any) -> AsyncIOScheduler:
     # 06:00 — сбор контента (до утренней сводки)
     scheduler.add_job(
         make_collect_content(container),
-        trigger=CronTrigger(hour=6, minute=0, timezone=TIMEZONE),
+        trigger=CronTrigger(hour=6, minute=0, timezone=settings.app_timezone),
         id="collect_content",
         replace_existing=True,
     )
@@ -46,7 +45,7 @@ def create_scheduler(container: Any) -> AsyncIOScheduler:
     # 06:30 — утренняя сводка: погода + автобусы + тренировка + задачи + контент
     scheduler.add_job(
         make_morning_brief(container),
-        trigger=CronTrigger(hour=6, minute=30, timezone=TIMEZONE),
+        trigger=CronTrigger(hour=6, minute=30, timezone=settings.app_timezone),
         id="morning_brief",
         replace_existing=True,
     )
@@ -54,7 +53,7 @@ def create_scheduler(container: Any) -> AsyncIOScheduler:
     # 09:00 — задачи дня (заглушка, Фаза 3)
     scheduler.add_job(
         make_morning_brief(container),  # временно — та же сводка
-        trigger=CronTrigger(hour=9, minute=0, timezone=TIMEZONE),
+        trigger=CronTrigger(hour=9, minute=0, timezone=settings.app_timezone),
         id="tasks_morning",
         replace_existing=True,
     )
@@ -62,7 +61,7 @@ def create_scheduler(container: Any) -> AsyncIOScheduler:
     # 17:30 — вечерняя тренировка + учёба (заглушка, Фаза 3)
     scheduler.add_job(
         make_evening_summary(container),
-        trigger=CronTrigger(hour=17, minute=30, timezone=TIMEZONE),
+        trigger=CronTrigger(hour=17, minute=30, timezone=settings.app_timezone),
         id="evening_workout",
         replace_existing=True,
     )
@@ -70,7 +69,7 @@ def create_scheduler(container: Any) -> AsyncIOScheduler:
     # 22:00 — итог дня
     scheduler.add_job(
         make_evening_summary(container),
-        trigger=CronTrigger(hour=22, minute=0, timezone=TIMEZONE),
+        trigger=CronTrigger(hour=22, minute=0, timezone=settings.app_timezone),
         id="evening_summary",
         replace_existing=True,
     )

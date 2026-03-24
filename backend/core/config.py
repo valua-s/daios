@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     # App
     app_env: str = "development"
     secret_key: str = "change_me"
+    app_timezone: str = "Europe/Moscow"
 
     # PostgreSQL
     db_host: str = "localhost"
@@ -42,7 +43,8 @@ class Settings(BaseSettings):
     minio_secure: bool = False
 
     # Telegram
-    telegram_socks_proxy: str = ""
+    telegram_use_proxy: bool = Field(default=False, description="Enable SOCKS5 proxy for Telegram connections")
+    telegram_socks_proxy: str = Field("", description="SOCKS5 proxy URL, e.g. socks5://user:pass@host:port")
     telegram_bot_token: str = Field(..., description="Bot token from @BotFather")
     telegram_user_id: int = Field(..., description="Your numeric Telegram user ID")
 

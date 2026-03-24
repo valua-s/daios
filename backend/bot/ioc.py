@@ -11,6 +11,7 @@ import certifi
 import valkey.asyncio as valkey
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.fsm.storage.memory import SimpleEventIsolation
 from aiogram.fsm.storage.redis import RedisStorage
@@ -33,7 +34,7 @@ class MainProvider(Provider):
     async def http_session(
         self, ssl: Annotated[HttpSsl, FromComponent("ssl")]
     ) -> AsyncIterator[ClientSession]:
-        if settings.telegram_socks_proxy:
+        if settings.telegram_use_proxy and settings.telegram_socks_proxy:
             connector = ProxyConnector.from_url(settings.telegram_socks_proxy, ssl=ssl)
         else:
             connector = TCPConnector(ssl=ssl)
@@ -68,6 +69,7 @@ class AiogramProvider(Provider):
             settings.telegram_bot_token,
             session=RetryAiohttpSession(http_session),
             default=DefaultBotProperties(
+                parse_mode=ParseMode.HTML,
                 allow_sending_without_reply=True,
                 link_preview=LinkPreviewOptions(is_disabled=True),
             ),
@@ -88,7 +90,10 @@ class AiogramProvider(Provider):
     @provide(cache=False)
     async def redis_client(self) -> AsyncIterator[valkey.Redis]:
         async with valkey.Redis(
-            host=settings.redis_host, port=settings.redis_port,
+            host=settings.redis_host,
+            port=settings.redis_port,
+            username=settings.redis_user,
+            password=settings.redis_password,
         ) as r:
             yield r
 

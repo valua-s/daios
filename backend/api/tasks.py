@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from datetime import date
+
 from dishka.integrations.litestar import FromDishka
 from litestar import Controller, delete, get, patch, post
 from litestar.exceptions import NotFoundException
+from litestar.params import Parameter
 
-from backend.api.schemas import CreateTaskRequest, TaskDTO
+from backend.api.schemas import CreateTaskRequest, TaskDTO, UpdateTaskRequest
 from backend.models.task import Task
 from backend.services.task_service import TaskService
 
@@ -30,6 +33,16 @@ class TaskController(Controller):
         tasks = await task_service.get_today_tasks()
         return [_to_dto(t) for t in tasks]
 
+    @get("/range")
+    async def get_range(
+        self,
+        task_service: FromDishka[TaskService],
+        from_date: date = Parameter(query="from"),
+        to_date: date = Parameter(query="to"),
+    ) -> list[TaskDTO]:
+        tasks = await task_service.get_tasks_by_range(from_date, to_date)
+        return [_to_dto(t) for t in tasks]
+
     @post("/")
     async def create_task(
         self,
@@ -42,7 +55,35 @@ class TaskController(Controller):
             source=data.source,
             target_date=data.date,
             scheduled_time=data.scheduled_time,
+            notes=data.notes,
         )
+        return _to_dto(task)
+
+    @patch("/{task_id:int}")
+    async def update_task(
+        self,
+        task_id: int,
+        data: UpdateTaskRequest,
+        task_service: FromDishka[TaskService],
+    ) -> TaskDTO:
+        fields: dict = {}
+        if data.title is not None:
+            fields["title"] = data.title
+        if data.date is not None:
+            fields["date"] = data.date
+        if data.clear_time:
+            fields["scheduled_time"] = None
+        elif data.scheduled_time is not None:
+            fields["scheduled_time"] = data.scheduled_time
+        if data.clear_notes:
+            fields["notes"] = None
+        elif data.notes is not None:
+            fields["notes"] = data.notes
+        if not fields:
+            raise NotFoundException(detail="Nothing to update")
+        task = await task_service.update_task(task_id, **fields)
+        if task is None:
+            raise NotFoundException(detail=f"Task {task_id} not found")
         return _to_dto(task)
 
     @patch("/{task_id:int}/toggle")
