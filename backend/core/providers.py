@@ -106,8 +106,8 @@ class AppProvider(Provider):
         return TaskService(session)
 
     @provide(scope=Scope.REQUEST)
-    def get_settings_service(self, session: AsyncSession) -> SettingsService:
-        return SettingsService(session)
+    def get_settings_service(self, session: AsyncSession, redis: Redis) -> SettingsService:
+        return SettingsService(session, redis)
 
     @provide(scope=Scope.REQUEST)
     def get_workout_service(

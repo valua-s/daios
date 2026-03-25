@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
+from collections.abc import Callable
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from dishka import make_async_container
+from dishka import AsyncContainer, make_async_container
+from redis.asyncio import Redis
 
 from backend.core.config import settings
 from backend.core.providers import AppProvider
@@ -16,65 +17,106 @@ from backend.scheduler.jobs import (
     make_morning_brief,
     make_sync_workouts,
 )
+from backend.services.settings_service import SettingsService
 
 logger = logging.getLogger(__name__)
 
+SCHEDULE_RELOAD_CHANNEL = "schedule:reload"
 
-def create_scheduler(container: Any) -> AsyncIOScheduler:
-    scheduler = AsyncIOScheduler(timezone=settings.app_timezone)
+# Маппинг event_name → фабрика job-функции
+JOB_FACTORIES: dict[str, Callable[[AsyncContainer], Callable]] = {
+    "morning_brief": make_morning_brief,
+    "evening_summary": make_evening_summary,
+    "collect_content": make_collect_content,
+    "sync_workouts": make_sync_workouts,
+}
 
-    sync_workouts_job = make_sync_workouts(container)
 
-    # 06:00, 17:00 — синхронизация тренировок из Google Sheets в DB
-    for hour in (6, 17):
-        scheduler.add_job(
-            sync_workouts_job,
-            trigger=CronTrigger(hour=hour, minute=0, timezone=settings.app_timezone),
-            id=f"sync_workouts_{hour:02d}",
-            replace_existing=True,
+def _parse_cron(cron_expr: str) -> list[CronTrigger]:
+    """Парсит cron выражение в список триггеров.
+
+    Поддерживает мульти-значения (напр. '0 6,17 * * *' → 2 триггера).
+    """
+    parts = cron_expr.split()
+    minute, hours_str = parts[0], parts[1]
+    return [
+        CronTrigger(
+            hour=int(hour),
+            minute=int(minute),
+            timezone=settings.app_timezone,
         )
+        for hour in hours_str.split(",")
+    ]
 
-    # 06:00 — сбор контента (до утренней сводки)
-    scheduler.add_job(
-        make_collect_content(container),
-        trigger=CronTrigger(hour=6, minute=0, timezone=settings.app_timezone),
-        id="collect_content",
-        replace_existing=True,
-    )
 
-    # 06:30 — утренняя сводка: погода + автобусы + тренировка + задачи + контент
-    scheduler.add_job(
-        make_morning_brief(container),
-        trigger=CronTrigger(hour=6, minute=30, timezone=settings.app_timezone),
-        id="morning_brief",
-        replace_existing=True,
-    )
+async def load_schedules_from_db(container: AsyncContainer) -> list[dict]:
+    """Читает расписания из БД, создавая дефолты если нужно."""
+    async with container() as req:
+        svc = await req.get(SettingsService)
+        await svc.ensure_default_schedules()
+        return [
+            {
+                "event_name": s.event_name,
+                "cron_expr": s.cron_expr,
+                "enabled": s.enabled,
+            }
+            for s in await svc.get_schedules()
+        ]
 
-    # 09:00 — задачи дня (заглушка, Фаза 3)
-    scheduler.add_job(
-        make_morning_brief(container),  # временно — та же сводка
-        trigger=CronTrigger(hour=9, minute=0, timezone=settings.app_timezone),
-        id="tasks_morning",
-        replace_existing=True,
-    )
 
-    # 17:30 — вечерняя тренировка + учёба (заглушка, Фаза 3)
-    scheduler.add_job(
-        make_evening_summary(container),
-        trigger=CronTrigger(hour=17, minute=30, timezone=settings.app_timezone),
-        id="evening_workout",
-        replace_existing=True,
-    )
+def apply_schedules(
+    scheduler: AsyncIOScheduler,
+    container: AsyncContainer,
+    schedules: list[dict],
+) -> None:
+    """Применяет расписания к планировщику."""
+    # Удаляем все текущие джобы
+    for job in scheduler.get_jobs():
+        job.remove()
 
-    # 22:00 — итог дня
-    scheduler.add_job(
-        make_evening_summary(container),
-        trigger=CronTrigger(hour=22, minute=0, timezone=settings.app_timezone),
-        id="evening_summary",
-        replace_existing=True,
-    )
+    for s in schedules:
+        factory = JOB_FACTORIES.get(s["event_name"])
+        if factory is None:
+            logger.warning("Unknown event_name: %s, skipping", s["event_name"])
+            continue
+        if not s["enabled"]:
+            logger.info("Schedule %s disabled, skipping", s["event_name"])
+            continue
 
-    return scheduler
+        job_func = factory(container)
+        triggers = _parse_cron(s["cron_expr"])
+
+        for i, trigger in enumerate(triggers):
+            job_id = s["event_name"] if len(triggers) == 1 else f"{s['event_name']}_{i:02d}"
+            scheduler.add_job(
+                job_func,
+                trigger=trigger,
+                id=job_id,
+                replace_existing=True,
+            )
+
+    logger.info("Schedules applied. Jobs: %s", [j.id for j in scheduler.get_jobs()])
+
+
+async def listen_for_reload(
+    redis: Redis,
+    scheduler: AsyncIOScheduler,
+    container: AsyncContainer,
+) -> None:
+    """Слушает Redis pub/sub для hot-reload расписаний."""
+    pubsub = redis.pubsub()
+    await pubsub.subscribe(SCHEDULE_RELOAD_CHANNEL)
+    logger.info("Listening for schedule reload on channel '%s'", SCHEDULE_RELOAD_CHANNEL)
+
+    async for message in pubsub.listen():
+        if message["type"] != "message":
+            continue
+        logger.info("Received schedule reload signal")
+        try:
+            schedules = await load_schedules_from_db(container)
+            apply_schedules(scheduler, container, schedules)
+        except Exception:
+            logger.exception("Failed to reload schedules")
 
 
 async def main() -> None:
@@ -85,18 +127,27 @@ async def main() -> None:
     logger.info("Starting DAIOS scheduler...")
 
     container = make_async_container(AppProvider())
-    scheduler = create_scheduler(container)
-    scheduler.start()
+    redis: Redis = await container.get(Redis)
 
-    logger.info("Scheduler running. Jobs: %s", [j.id for j in scheduler.get_jobs()])
+    scheduler = AsyncIOScheduler(timezone=settings.app_timezone)
+
+    # Загружаем расписания из БД
+    schedules = await load_schedules_from_db(container)
+    apply_schedules(scheduler, container, schedules)
+
+    scheduler.start()
 
     # Немедленная синхронизация тренировок при старте
     logger.info("Running initial workout sync...")
     await make_sync_workouts(container)()
 
+    # Запускаем слушатель Redis для hot-reload
+    reload_task = asyncio.create_task(listen_for_reload(redis, scheduler, container))
+
     try:
         await asyncio.Event().wait()
     except (KeyboardInterrupt, SystemExit):
+        reload_task.cancel()
         scheduler.shutdown()
         await container.close()
 

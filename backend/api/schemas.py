@@ -30,7 +30,7 @@ class CreateTaskRequest:
 class UpdateTaskRequest:
     title: str | None = None
     date: date | None = None
-    scheduled_time: time | None = None
+    scheduled_time: str | None = None
     notes: str | None = None
     clear_time: bool = False
     clear_notes: bool = False

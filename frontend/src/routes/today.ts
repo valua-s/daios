@@ -391,12 +391,13 @@ todayRouter.get('/', async (c) => {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
-        }).then(function() {
+        }).then(function(res) {
+          if (!res.ok) throw new Error(res.status);
           window.location.reload();
-        }).catch(function() {
+        }).catch(function(err) {
           btn.disabled = false;
           btn.textContent = 'Сохранить';
-          alert('Ошибка сохранения');
+          alert('Ошибка сохранения: ' + (err.message || 'неизвестная ошибка'));
         });
       }
 

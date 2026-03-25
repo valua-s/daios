@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, time
 
 from dishka.integrations.litestar import FromDishka
 from litestar import Controller, delete, get, patch, post
@@ -74,7 +74,7 @@ class TaskController(Controller):
         if data.clear_time:
             fields["scheduled_time"] = None
         elif data.scheduled_time is not None:
-            fields["scheduled_time"] = data.scheduled_time
+            fields["scheduled_time"] = time.fromisoformat(data.scheduled_time)
         if data.clear_notes:
             fields["notes"] = None
         elif data.notes is not None:

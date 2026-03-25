@@ -11,7 +11,10 @@ from backend.agents.evening_agent import EveningAgent
 from backend.agents.task_agent import TaskAgent
 from backend.agents.workout_agent import WorkoutAgent
 from backend.bot.formatters import format_evening_summary, format_morning_brief
-from backend.bot.keyboards import evening_task_keyboard
+from backend.bot.keyboards import (
+    evening_postpone_all_keyboard,
+    evening_task_keyboard,
+)
 from backend.integrations.telegram import TelegramNotifier
 from backend.services.task_service import TaskService
 
@@ -68,9 +71,11 @@ class Orchestrator(BaseAgent):
                 keyboard=evening_task_keyboard(task.id),
             )
 
-        count = await self._task_service.postpone_pending_to_tomorrow()
-        if count:
-            logger.info("Postponed %d tasks to tomorrow", count)
+        if pending:
+            await self._notifier.send(
+                f"👆 {len(pending)} невыполненных — выбери что делать с каждой или перенеси все:",
+                keyboard=evening_postpone_all_keyboard(),
+            )
 
         return {**state, "evening_summary": text}
 

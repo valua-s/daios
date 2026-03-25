@@ -311,6 +311,34 @@ async def cb_backlog_delete(
 
 # ── Вечерний итог ─────────────────────────────────────────────────────────────
 
+@router.callback_query(F.data.startswith("evening:postpone:"))
+@inject
+async def cb_evening_postpone(
+    callback: CallbackQuery,
+    task_service: FromDishka[TaskService],
+) -> None:
+    task_id = int(callback.data.split(":")[-1])
+    task = await task_service.postpone_task(task_id)
+    if task:
+        await callback.answer("📅 Перенесено на завтра")
+    else:
+        await callback.answer("Задача не найдена", show_alert=True)
+    await callback.message.delete()  # type: ignore[union-attr]
+
+
+@router.callback_query(F.data == "evening:postpone_all")
+@inject
+async def cb_evening_postpone_all(
+    callback: CallbackQuery,
+    task_service: FromDishka[TaskService],
+) -> None:
+    count = await task_service.postpone_pending_to_tomorrow()
+    await callback.answer(f"📅 Перенесено задач: {count}")
+    await callback.message.edit_text(  # type: ignore[union-attr]
+        f"📅 {count} задач перенесено на завтра",
+    )
+
+
 @router.callback_query(F.data.startswith("evening:move:"))
 @inject
 async def cb_evening_move(

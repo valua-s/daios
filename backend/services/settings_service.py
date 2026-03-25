@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.repositories.settings_repo import (
     ScheduleRepository,
     UserSettingRepository,
 )
+
+logger = logging.getLogger(__name__)
 
 _DELETED = "__deleted__"
 
@@ -36,11 +40,15 @@ class ScheduleDTO:
     time: str  # HH:MM, только для простых ежедневных cron (одно время)
 
 
+SCHEDULE_RELOAD_CHANNEL = "schedule:reload"
+
+
 class SettingsService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, redis: Redis) -> None:
         self._session = session
         self._settings = UserSettingRepository(session)
         self._schedules = ScheduleRepository(session)
+        self._redis = redis
 
     # ── Интересы ──────────────────────────────────────────────────────────
 
@@ -81,6 +89,19 @@ class SettingsService:
 
     # ── Расписание ────────────────────────────────────────────────────────
 
+    async def ensure_default_schedules(self) -> None:
+        """Создаёт записи расписаний в БД если их нет."""
+        existing = {s.event_name for s in await self._schedules.get_all()}
+        for default in DEFAULT_SCHEDULES:
+            if default["event_name"] not in existing:
+                await self._schedules.upsert(
+                    event_name=default["event_name"],
+                    cron_expr=default["cron_expr"],
+                    enabled=default["enabled"],
+                    description=default["description"],
+                )
+        await self._session.commit()
+
     async def get_schedules(self) -> list[ScheduleDTO]:
         db_schedules = {s.event_name: s for s in await self._schedules.get_all()}
         result = []
@@ -109,11 +130,18 @@ class SettingsService:
             description=default["description"],
         )
         await self._session.commit()
+
+        # Сигнал scheduler'у перечитать расписания
+        try:
+            await self._redis.publish(SCHEDULE_RELOAD_CHANNEL, "reload")
+        except Exception:
+            logger.warning("Failed to publish schedule reload signal", exc_info=True)
+
         return ScheduleDTO(
             event_name=schedule.event_name,
             cron_expr=schedule.cron_expr,
             enabled=schedule.enabled,
-            description=schedule.description,
+            description=schedule.description or default["description"],
             time=_cron_to_time(schedule.cron_expr),
         )
 
