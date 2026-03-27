@@ -16,6 +16,7 @@ from backend.scheduler.jobs import (
     make_evening_summary,
     make_morning_brief,
     make_sync_workouts,
+    make_evening_brief
 )
 from backend.services.settings_service import SettingsService
 
@@ -29,6 +30,7 @@ JOB_FACTORIES: dict[str, Callable[[AsyncContainer], Callable]] = {
     "evening_summary": make_evening_summary,
     "collect_content": make_collect_content,
     "sync_workouts": make_sync_workouts,
+    "evening_brief": make_evening_brief
 }
 
 

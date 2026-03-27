@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pydantic import BaseModel
 
 from dataclasses import dataclass
 from datetime import date, time
@@ -26,8 +27,8 @@ class CreateTaskRequest:
     notes: str | None = None
 
 
-@dataclass
-class UpdateTaskRequest:
+class UpdateTaskRequest(BaseModel):
+    model_config = {"from_attributes": True}
     title: str | None = None
     date: date | None = None
     scheduled_time: str | None = None

@@ -5,6 +5,7 @@ from datetime import datetime, time
 import httpx
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
+import pytz
 
 from backend.integrations.base import BaseIntegration
 
@@ -38,7 +39,7 @@ class BusScheduleParser(BaseIntegration):
 
         soup = BeautifulSoup(response.text, "html.parser")
         rows = soup.find_all("tr")
-        now = datetime.now().time()
+        now = datetime.now(pytz.timezone("Europe/Moscow")).time()
         arrivals: list[BusArrival] = []
 
         for row in rows:

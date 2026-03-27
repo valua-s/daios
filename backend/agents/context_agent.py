@@ -33,7 +33,7 @@ class ContextAgent(BaseAgent):
         self._weather = weather_client
         self._bus = bus_parser
 
-    async def run(self, state: dict[str, Any]) -> dict[str, Any]:
+    async def run_morning(self, state: dict[str, Any]) -> dict[str, Any]:
         today = date.today()
         is_weekend = _is_weekend(today)
 
@@ -56,6 +56,26 @@ class ContextAgent(BaseAgent):
         return {
             **state,
             "weather": weather,
+            "bus_schedule": bus_schedule,
+            "is_weekend": is_weekend,
+        }
+    
+    async def run_evening(self, state: dict[str, Any]) -> dict[str, Any]:
+        today = date.today()
+        is_weekend = _is_weekend(today)
+
+        bus_schedule: list[BusArrival] = []
+
+        if not is_weekend:
+            try:
+                bus_schedule = await self._bus.get_next_departures(
+                    url=settings.bus_schedule_url,
+                )
+            except Exception:
+                logger.exception("Failed to fetch bus schedule")
+
+        return {
+            **state,
             "bus_schedule": bus_schedule,
             "is_weekend": is_weekend,
         }

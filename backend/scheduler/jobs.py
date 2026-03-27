@@ -55,3 +55,13 @@ def make_evening_summary(container: AsyncContainer) -> Callable:
             await orchestrator.run_evening(state={})
 
     return job
+
+
+def make_evening_brief(container: AsyncContainer) -> Callable:
+    async def job() -> None:
+        logger.info("Running evening_brief")
+        async with container() as request_container:
+            orchestrator = await request_container.get(Orchestrator)
+            await orchestrator.run_evening_brief(state={})
+
+    return job

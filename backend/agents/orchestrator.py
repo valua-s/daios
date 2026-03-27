@@ -1,4 +1,5 @@
 from __future__ import annotations
+import statistics
 
 import logging
 from datetime import date
@@ -10,7 +11,7 @@ from backend.agents.context_agent import ContextAgent
 from backend.agents.evening_agent import EveningAgent
 from backend.agents.task_agent import TaskAgent
 from backend.agents.workout_agent import WorkoutAgent
-from backend.bot.formatters import format_evening_summary, format_morning_brief
+from backend.bot.formatters import format_evening_summary, format_morning_brief, format_evening_brief
 from backend.bot.keyboards import (
     evening_postpone_all_keyboard,
     evening_task_keyboard,
@@ -44,7 +45,7 @@ class Orchestrator(BaseAgent):
 
     async def run(self, state: dict[str, Any]) -> dict[str, Any]:
         """Утренняя сводка: контекст + тренировка + задачи + контент."""
-        state = await self._context.run(state)
+        state = await self._context.run_morning(state)
         state = await self._workout.run(state)
         state = await self._tasks.run(state)
         state = await self._content.run(state)
@@ -53,6 +54,18 @@ class Orchestrator(BaseAgent):
         await self._notifier.send(text)
 
         return {**state, "morning_brief": text}
+
+    async def run_evening_brief(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Вечерняя сводка: контекст + тренировка + задачи + контент."""
+        state = await self._context.run_morning(state)
+        state = await self._workout.run(state)
+        state = await self._tasks.run(state)
+        state = await self._content.run(state)
+
+        text = self.build_evening_brief(state)
+        await self._notifier.send(text)
+
+        return {**state, "evening_brief": text}
 
     async def run_evening(self, state: dict[str, Any]) -> dict[str, Any]:
         """Вечерний итог: анализ задач + перенос невыполненных + отправка."""
@@ -79,12 +92,23 @@ class Orchestrator(BaseAgent):
 
         return {**state, "evening_summary": text}
 
-    def build_morning_brief(self, state: dict[str, Any]) -> str:
+    @staticmethod
+    def build_morning_brief(state: dict[str, Any]) -> str:
         return format_morning_brief(
+            today=date.today(),
+            tasks=state.get("tasks", []),
+            weather=state.get("weather"),
+            bus_schedule=state.get("bus_schedule", []),
+            is_weekend=state.get("is_weekend", False),
+            content_items=state.get("content_items", []),
+        )
+    
+    @staticmethod
+    def build_evening_brief(state: dict[str, Any]) -> str:
+        return format_evening_brief(
             today=date.today(),
             workout=state.get("workout"),
             tasks=state.get("tasks", []),
-            weather=state.get("weather"),
             bus_schedule=state.get("bus_schedule", []),
             is_weekend=state.get("is_weekend", False),
             content_items=state.get("content_items", []),
