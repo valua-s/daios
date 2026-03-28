@@ -23,7 +23,7 @@ class CreateTaskRequest:
     title: str
     priority: str = "medium"
     source: str = "web"
-    date: date | None = None
+    date: Date | None = None
     scheduled_time: time | None = None
     notes: str | None = None
 

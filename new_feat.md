@@ -5,7 +5,7 @@ fix:
 - remake all dataclasses in dto to basemodels
 - remove many if in logical construction
 
-
+- переделать на умные запросы к ИИ формирование ссылок на ресурсы
 
 --- 
 feat:

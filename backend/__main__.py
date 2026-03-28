@@ -35,7 +35,7 @@ async def _main() -> None:
         cors_config=CORSConfig(
             allow_origins=["*"] if not settings.is_production else [],
         ),
-        # debug=not settings.is_production,
+        debug=True,
     )
     setup_dishka(container, app)
     await uvicorn.Server(

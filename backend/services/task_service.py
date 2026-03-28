@@ -21,7 +21,7 @@ class TaskService:
     """Вся бизнес-логика задач и бэклога."""
 
     def __init__(self, session: AsyncSession) -> None:
-        self._tasks = TaskRepository(session)
+        self._tasks: TaskRepository = TaskRepository(session)
         self._backlog = BacklogRepository(session)
         self._session = session
 
