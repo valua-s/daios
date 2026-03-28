@@ -1,8 +1,9 @@
 from __future__ import annotations
-from pydantic import BaseModel
 
 from dataclasses import dataclass
 from datetime import date as Date, time
+
+from pydantic import BaseModel
 
 
 @dataclass

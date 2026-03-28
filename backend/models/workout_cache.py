@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date as data, datetime
 
 from sqlalchemy import Date, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -14,6 +14,6 @@ class WorkoutCache(Base):
     __tablename__ = "workout_cache"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    date: Mapped[date] = mapped_column(Date, nullable=False, unique=True, index=True)
+    date: Mapped[data] = mapped_column(Date, nullable=False, unique=True, index=True)
     data_json: Mapped[str] = mapped_column(Text, nullable=False)  # JSON со структурой тренировки
     fetched_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)

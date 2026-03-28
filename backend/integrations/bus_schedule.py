@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import datetime, time
 
 import httpx
+import pytz
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
-import pytz
 
 from backend.integrations.base import BaseIntegration
 

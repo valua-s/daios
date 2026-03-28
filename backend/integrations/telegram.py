@@ -38,9 +38,11 @@ def _make_bot() -> Bot:
 
         def __init__(self) -> None:
             super().__init__()
-            self._session = aiohttp_session
+            self._session: ClientSession = aiohttp_session
 
-        async def create_session(self) -> ClientSession:  # type: ignore[override]
+        async def create_session(self) -> ClientSession:
+            if not self._session:
+                raise ValueError
             return self._session
 
         async def close(self) -> None:

@@ -91,8 +91,9 @@ class WorkoutService:
                 },
                 ensure_ascii=False,
             ),
-            fetched_at=datetime.utcnow(),
+            fetched_at=datetime.now(),
         )
 
-    def _deserialize(self, data_json: str) -> WorkoutPlan:
+    @staticmethod
+    def _deserialize(data_json: str) -> WorkoutPlan:
         return WorkoutPlan(**json.loads(data_json))

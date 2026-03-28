@@ -19,13 +19,13 @@ router = Router(name="workout")
 @router.callback_query(F.data == "workout:done")
 async def cb_workout_done(callback: CallbackQuery) -> None:
     await callback.message.answer("💪 Отлично, так держать!")
-    await callback.message.edit_reply_markup(reply_markup=None)  # type: ignore[union-attr]
+    await callback.message.edit_reply_markup(reply_markup=None)
 
 
 @router.callback_query(F.data == "workout:skip")
 async def cb_workout_skip(callback: CallbackQuery) -> None:
     await callback.message.answer("👌 Окей, бывает")
-    await callback.message.edit_reply_markup(reply_markup=None)  # type: ignore[union-attr]
+    await callback.message.edit_reply_markup(reply_markup=None)
 
 
 @router.message(Command("workout"))

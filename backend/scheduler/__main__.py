@@ -13,10 +13,10 @@ from backend.core.config import settings
 from backend.core.providers import AppProvider
 from backend.scheduler.jobs import (
     make_collect_content,
+    make_evening_brief,
     make_evening_summary,
     make_morning_brief,
     make_sync_workouts,
-    make_evening_brief
 )
 from backend.services.settings_service import SettingsService
 
