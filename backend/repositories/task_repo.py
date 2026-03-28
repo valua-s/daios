@@ -20,14 +20,14 @@ class TaskRepository(BaseRepository[Task]):
 
     async def get_by_date(self, target_date: date) -> list[Task]:
         result = await self._session.execute(
-            select(Task).where(Task.date == target_date).order_by(_PRIORITY_ORDER)
+            select(Task).where(Task.scheduled_date == target_date).order_by(_PRIORITY_ORDER)
         )
         return list(result.scalars().all())
 
     async def get_pending_by_date(self, target_date: date) -> list[Task]:
         result = await self._session.execute(
             select(Task).where(
-                Task.date == target_date,
+                Task.scheduled_date == target_date,
                 Task.status == TaskStatus.pending,
             )
         )
@@ -38,8 +38,17 @@ class TaskRepository(BaseRepository[Task]):
     ) -> list[Task]:
         result = await self._session.execute(
             select(Task)
-            .where(Task.date >= from_date, Task.date <= to_date)
-            .order_by(Task.date, _PRIORITY_ORDER)
+            .where(Task.scheduled_date >= from_date, Task.scheduled_date <= to_date)
+            .order_by(Task.scheduled_date, _PRIORITY_ORDER)
+        )
+        return list(result.scalars().all())
+
+    async def get_overdue_pending(self, today: date) -> list[Task]:
+        result = await self._session.execute(
+            select(Task).where(
+                Task.scheduled_date < today,
+                Task.status == TaskStatus.pending,
+            )
         )
         return list(result.scalars().all())
 

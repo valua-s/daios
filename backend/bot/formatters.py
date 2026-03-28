@@ -155,6 +155,6 @@ def format_evening_summary(done: list[Task], pending: list[Task]) -> str:
             time_str = f" · {task.scheduled_time.strftime('%H:%M')}" if task.scheduled_time else ""
             lines.append(f"  ⏳ {task.title}{time_str}")
         lines.append("")
-        lines.append("Невыполненные задачи перенесены на завтра.\nМожешь отправить их в бэклог или удалить:")
+        lines.append("Невыполненные задачи будут перенесены в бэклог в полночь.\nМожешь перенести на завтра, отправить в бэклог или удалить:")
 
     return "\n".join(lines)

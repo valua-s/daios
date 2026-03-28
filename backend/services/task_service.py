@@ -54,7 +54,7 @@ class TaskService:
             title=title,
             priority=TaskPriority(priority),
             source=source,
-            date=target_date or _today(),
+            scheduled_date=target_date or _today(),
             status=TaskStatus.pending,
             scheduled_time=scheduled_time,
             notes=notes,
@@ -89,11 +89,23 @@ class TaskService:
     async def postpone_task(self, task_id: int) -> Task | None:
         updated = await self._tasks.update(
             task_id,
-            date=_today() + timedelta(days=1),
+            scheduled_date=_today() + timedelta(days=1),
             status=TaskStatus.pending,
         )
 
         return updated
+
+    async def move_pending_to_backlog(self) -> int:
+        """Переносит все просроченные невыполненные задачи (до сегодня) в бэклог."""
+        pending = await self._tasks.get_overdue_pending(_today())
+        for task in pending:
+            await self._backlog.create(
+                title=task.title,
+                reason="не выполнено за день",
+                notes=task.notes,
+            )
+            await self._tasks.delete(task.id)
+        return len(pending)
 
     async def postpone_pending_to_tomorrow(self) -> int:
         """Переносит все невыполненные задачи на сегодня на завтра.
@@ -102,7 +114,7 @@ class TaskService:
         pending = await self._tasks.get_pending_by_date(_today())
         tomorrow = _today() + timedelta(days=1)
         for task in pending:
-            await self._tasks.update(task.id, date=tomorrow)
+            await self._tasks.update(task.id, scheduled_date=tomorrow)
 
         return len(pending)
 
@@ -130,7 +142,7 @@ class TaskService:
             return None
         task = await self._tasks.create(
             title=item.title,
-            date=_today(),
+            scheduled_date=_today(),
             source="backlog",
             priority=TaskPriority.medium,
             status=TaskStatus.pending,

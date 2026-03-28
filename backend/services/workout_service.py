@@ -56,7 +56,7 @@ class WorkoutService:
 
     async def get_workout_for_date(self, target_date: date) -> WorkoutPlan | None:
         result = await self._session.execute(
-            select(WorkoutCache).where(WorkoutCache.date == target_date)
+            select(WorkoutCache).where(WorkoutCache.workout_date == target_date)
         )
         cached = result.scalars().first()
         return self._deserialize(cached.data_json) if cached else None
@@ -87,10 +87,10 @@ class WorkoutService:
 
     async def _upsert_cache(self, target_date: date, plan: WorkoutPlan) -> None:
         await self._session.execute(
-            delete(WorkoutCache).where(WorkoutCache.date == target_date)
+            delete(WorkoutCache).where(WorkoutCache.workout_date == target_date)
         )
         await self._cache_repo.create(
-            date=target_date,
+            workout_date=target_date,
             data_json=json.dumps(
                 {
                     "type": plan.type,

@@ -18,7 +18,7 @@ def _to_dto(task: Task) -> TaskDTO:
         title=task.title,
         status=task.status.value,
         priority=task.priority.value,
-        date=task.date,
+        scheduled_date=task.scheduled_date,
         scheduled_time=task.scheduled_time,
         source=task.source,
         notes=task.notes,
@@ -53,7 +53,7 @@ class TaskController(Controller):
             title=data.title,
             priority=data.priority,
             source=data.source,
-            target_date=data.date,
+            target_date=data.scheduled_date,
             scheduled_time=data.scheduled_time,
             notes=data.notes,
         )
@@ -69,8 +69,8 @@ class TaskController(Controller):
         fields: dict = {}
         if data.title is not None:
             fields["title"] = data.title
-        if data.date is not None:
-            fields["date"] = data.date
+        if data.scheduled_date is not None:
+            fields["scheduled_date"] = data.scheduled_date
         if data.clear_time:
             fields["scheduled_time"] = None
         elif data.scheduled_time is not None:

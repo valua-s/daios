@@ -40,7 +40,7 @@ todayRouter.post('/new', async (c) => {
     body: JSON.stringify({
       title,
       priority: body.priority ?? 'medium',
-      date: body.date || null,
+      scheduled_date: body.date || null,
       scheduled_time: scheduledTime,
       notes: body.notes || null,
       source: 'web',
@@ -107,7 +107,7 @@ todayRouter.get('/', async (c) => {
 
   const rows = sorted.map(t => {
     const doneStyle = t.status === 'done' ? ' style="color:#444;text-decoration:line-through;"' : ''
-    const titleCell = `<div class="task-title"${doneStyle} title="${esc(t.title)}" data-id="${t.id}" data-title="${esc(t.title)}" data-notes="${esc(t.notes ?? '')}" data-time="${t.scheduled_time ? t.scheduled_time.slice(0, 5) : ''}" data-date="${t.date}" data-status="${t.status}" onclick="openDetail(this)">${esc(t.title)}</div>`
+    const titleCell = `<div class="task-title"${doneStyle} title="${esc(t.title)}" data-id="${t.id}" data-title="${esc(t.title)}" data-notes="${esc(t.notes ?? '')}" data-time="${t.scheduled_time ? t.scheduled_time.slice(0, 5) : ''}" data-date="${t.scheduled_date}" data-status="${t.status}" onclick="openDetail(this)">${esc(t.title)}</div>`
     return [
     titleCell,
     t.scheduled_time
@@ -368,7 +368,7 @@ todayRouter.get('/', async (c) => {
 
         var body = {};
         if (title) body.title = title;
-        if (date) body.date = date;
+        if (date) body.scheduled_date = date;
         if (time) {
           body.scheduled_time = time.length === 5 ? time + ':00' : time;
         } else {

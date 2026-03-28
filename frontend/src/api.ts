@@ -24,7 +24,7 @@ export interface TaskDTO {
   title: string
   status: 'pending' | 'done' | 'cancelled'
   priority: 'low' | 'medium' | 'high'
-  date: string
+  scheduled_date: string
   scheduled_time: string | null
   source: string | null
   notes: string | null
@@ -47,7 +47,7 @@ export const getTasksByRange = (from: string, to: string) =>
 
 export const updateTask = (id: number, data: {
   title?: string
-  date?: string
+  scheduled_date?: string
   scheduled_time?: string | null
   notes?: string | null
   clear_time?: boolean

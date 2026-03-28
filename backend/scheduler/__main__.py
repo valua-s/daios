@@ -15,6 +15,7 @@ from backend.scheduler.jobs import (
     make_collect_content,
     make_evening_brief,
     make_evening_summary,
+    make_midnight_backlog,
     make_morning_brief,
     make_sync_workouts,
 )
@@ -30,7 +31,8 @@ JOB_FACTORIES: dict[str, Callable[[AsyncContainer], Callable]] = {
     "evening_summary": make_evening_summary,
     "collect_content": make_collect_content,
     "sync_workouts": make_sync_workouts,
-    "evening_brief": make_evening_brief
+    "evening_brief": make_evening_brief,
+    "midnight_backlog": make_midnight_backlog,
 }
 
 
@@ -131,7 +133,10 @@ async def main() -> None:
     container = make_async_container(AppProvider())
     redis: Redis = await container.get(Redis)
 
-    scheduler = AsyncIOScheduler(timezone=settings.app_timezone)
+    scheduler = AsyncIOScheduler(
+        timezone=settings.app_timezone,
+        job_defaults={"misfire_grace_time": 1, "coalesce": True},
+    )
 
     # Загружаем расписания из БД
     schedules = await load_schedules_from_db(container)

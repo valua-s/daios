@@ -29,6 +29,7 @@ DEFAULT_SCHEDULES: list[dict] = [
     {"event_name": "collect_content", "cron_expr": "0 6 * * *", "enabled": True, "description": "Сбор контента"},
     {"event_name": "sync_workouts", "cron_expr": "0 6,17 * * *", "enabled": True, "description": "Синхронизация тренировок"},
     {"event_name": "evening_brief", "cron_expr": "30 16 * * *", "enabled": True, "description": "Вечерняя сводка"},
+    {"event_name": "midnight_backlog", "cron_expr": "0 0 * * *", "enabled": True, "description": "Перенос невыполненных в бэклог"},
 ]
 
 

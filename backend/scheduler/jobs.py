@@ -7,6 +7,7 @@ from dishka import AsyncContainer
 
 from backend.agents.orchestrator import Orchestrator
 from backend.services.content_service import ContentService
+from backend.services.task_service import TaskService
 from backend.services.workout_service import WorkoutService
 
 logger = logging.getLogger(__name__)
@@ -53,6 +54,17 @@ def make_evening_summary(container: AsyncContainer) -> Callable:
         async with container() as request_container:
             orchestrator = await request_container.get(Orchestrator)
             await orchestrator.run_evening(state={})
+
+    return job
+
+
+def make_midnight_backlog(container: AsyncContainer) -> Callable:
+    async def job() -> None:
+        logger.info("Running midnight_backlog")
+        async with container() as request_container:
+            svc = await request_container.get(TaskService)
+            count = await svc.move_pending_to_backlog()
+            logger.info("Moved %d pending tasks to backlog", count)
 
     return job
 

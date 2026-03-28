@@ -29,7 +29,7 @@ def _task_to_dto(task: Task) -> TaskDTO:
         title=task.title,
         status=task.status.value,
         priority=task.priority.value,
-        date=task.date,
+        scheduled_date=task.scheduled_date,
         scheduled_time=task.scheduled_time,
         source=task.source,
         notes=task.notes,
