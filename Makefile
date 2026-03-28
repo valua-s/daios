@@ -29,6 +29,9 @@ infra-down:
 backend-up:
 	$(BACKEND) up -d
 
+back-rebuild:
+	$(BACKEND) up --build -d
+
 backend-down:
 	$(BACKEND) down
 

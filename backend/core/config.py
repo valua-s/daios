@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     docker: bool = False
     # App
     app_env: str = "development"
-    secret_key: str = Field(..., description="Application secret key")
     app_timezone: str = "Europe/Moscow"
 
     # PostgreSQL

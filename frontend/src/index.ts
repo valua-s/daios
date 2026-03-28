@@ -20,7 +20,7 @@ app.get('/manifest.json', (c) => {
   return c.text(json, 200, { 'Content-Type': 'application/json' })
 })
 
-const API_URL = process.env.API_URL ?? 'http://daios_api:8000'
+const API_URL = process.env.API_URL ?? 'http://daios-api:8000'
 
 // Proxy /api/* requests to backend (for client-side JS)
 app.all('/api/*', async (c) => {
