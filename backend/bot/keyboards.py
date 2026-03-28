@@ -3,14 +3,14 @@ from __future__ import annotations
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from backend.models.task import Task
+from backend.models.task import Task, TaskStatus
 
 
 def task_list_keyboard(tasks: list[Task]) -> InlineKeyboardMarkup:
     """Список задач — тап на задачу открывает меню действий."""
     builder = InlineKeyboardBuilder()
     for task in tasks:
-        status_icon = "✅" if task.status == "done" else "⬜"
+        status_icon = "✅" if task.status == TaskStatus.done else "⬜"
         time_str = f" {task.scheduled_time.strftime('%H:%M')}" if task.scheduled_time else ""
         builder.row(
             InlineKeyboardButton(

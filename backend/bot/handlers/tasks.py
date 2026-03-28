@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, time
+from datetime import datetime, time
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -17,6 +18,7 @@ from backend.bot.keyboards import (
     task_action_keyboard,
     task_list_keyboard,
 )
+from backend.core.config import settings
 from backend.models.task import TaskStatus
 from backend.services.task_service import TaskService
 
@@ -64,7 +66,7 @@ async def cmd_tasks(
         return
 
     await message.answer(
-        f"📋 <b>Задачи на {date.today().strftime('%d.%m')}:</b>",
+        f"📋 <b>Задачи на {datetime.now(ZoneInfo(settings.app_timezone)).date().strftime('%d.%m')}:</b>",
         reply_markup=task_list_keyboard(tasks),
     )
 
@@ -205,7 +207,7 @@ async def cb_task_back(
     await callback.answer()
     if tasks:
         await callback.message.edit_text(
-            f"📋 <b>Задачи на {date.today().strftime('%d.%m')}:</b>",
+            f"📋 <b>Задачи на {datetime.now(ZoneInfo(settings.app_timezone)).date().strftime('%d.%m')}:</b>",
             reply_markup=task_list_keyboard(tasks),
         )
     else:
@@ -250,7 +252,7 @@ async def cb_task_delete(
     tasks = await task_service.get_today_tasks()
     if tasks:
         await callback.message.edit_text(
-            f"📋 <b>Задачи на {date.today().strftime('%d.%m')}:</b>",
+            f"📋 <b>Задачи на {datetime.now(ZoneInfo(settings.app_timezone)).date().strftime('%d.%m')}:</b>",
             reply_markup=task_list_keyboard(tasks),
         )
     else:
@@ -287,7 +289,7 @@ async def cb_backlog_move(
     tasks = await task_service.get_today_tasks()
     if tasks:
         await callback.message.edit_text(
-            f"📋 <b>Задачи на {date.today().strftime('%d.%m')}:</b>",
+            f"📋 <b>Задачи на {datetime.now(ZoneInfo(settings.app_timezone)).date().strftime('%d.%m')}:</b>",
             reply_markup=task_list_keyboard(tasks),
         )
     else:

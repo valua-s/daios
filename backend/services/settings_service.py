@@ -28,7 +28,7 @@ DEFAULT_SCHEDULES: list[dict] = [
     {"event_name": "evening_summary", "cron_expr": "0 20 * * *", "enabled": True, "description": "Вечерний итог"},
     {"event_name": "collect_content", "cron_expr": "0 6 * * *", "enabled": True, "description": "Сбор контента"},
     {"event_name": "sync_workouts", "cron_expr": "0 6,17 * * *", "enabled": True, "description": "Синхронизация тренировок"},
-    {"event_name": "evening_икшуа", "cron_expr": "30 16 * * *", "enabled": True, "description": "Вечерняя сводка"},
+    {"event_name": "evening_brief", "cron_expr": "30 16 * * *", "enabled": True, "description": "Вечерняя сводка"},
 ]
 
 
@@ -74,11 +74,9 @@ class SettingsService:
     async def set_interests(self, interests: dict[str, bool]) -> None:
         for key, value in interests.items():
             await self._settings.upsert(f"interests.{key}", str(value).lower())
-        await self._session.commit()
 
     async def add_interest(self, key: str) -> None:
         await self._settings.upsert(f"interests.{key}", "true")
-        await self._session.commit()
 
     async def delete_interest(self, key: str) -> None:
         if key in DEFAULT_INTERESTS:
@@ -86,7 +84,6 @@ class SettingsService:
             await self._settings.upsert(f"interests.{key}", _DELETED)
         else:
             await self._settings.delete(f"interests.{key}")
-        await self._session.commit()
 
     # ── Расписание ────────────────────────────────────────────────────────
 
@@ -101,7 +98,6 @@ class SettingsService:
                     enabled=default["enabled"],
                     description=default["description"],
                 )
-        await self._session.commit()
 
     async def get_schedules(self) -> list[ScheduleDTO]:
         db_schedules = {s.event_name: s for s in await self._schedules.get_all()}
@@ -130,7 +126,6 @@ class SettingsService:
             enabled=enabled,
             description=default["description"],
         )
-        await self._session.commit()
 
         # Сигнал scheduler'у перечитать расписания
         try:

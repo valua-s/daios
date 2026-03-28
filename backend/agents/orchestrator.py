@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from backend.agents.base import BaseAgent
 from backend.agents.content_agent import ContentAgent
@@ -19,6 +20,7 @@ from backend.bot.keyboards import (
     evening_postpone_all_keyboard,
     evening_task_keyboard,
 )
+from backend.core.config import settings
 from backend.integrations.telegram import TelegramNotifier
 from backend.services.task_service import TaskService
 
@@ -98,7 +100,7 @@ class Orchestrator(BaseAgent):
     @staticmethod
     def build_morning_brief(state: dict[str, Any]) -> str:
         return format_morning_brief(
-            today=date.today(),
+            today=datetime.now(ZoneInfo(settings.app_timezone)).date(),
             tasks=state.get("tasks", []),
             weather=state.get("weather"),
             bus_schedule=state.get("bus_schedule", []),
@@ -109,7 +111,7 @@ class Orchestrator(BaseAgent):
     @staticmethod
     def build_evening_brief(state: dict[str, Any]) -> str:
         return format_evening_brief(
-            today=date.today(),
+            today=datetime.now(ZoneInfo(settings.app_timezone)).date(),
             workout=state.get("workout"),
             tasks=state.get("tasks", []),
             bus_schedule=state.get("bus_schedule", []),

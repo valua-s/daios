@@ -50,12 +50,11 @@ class BacklogController(Controller):
         data: CreateBacklogItemRequest,
         task_service: FromDishka[TaskService],
     ) -> BacklogItemDTO:
-        item = await task_service._backlog.create(
+        item = await task_service.create_backlog_item(
             title=data.title,
             reason=data.reason,
             notes=data.notes,
         )
-        await task_service._session.commit()
         return _item_to_dto(item)
 
     @post("/{item_id:int}/today")

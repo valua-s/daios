@@ -59,7 +59,7 @@ class TaskService:
             scheduled_time=scheduled_time,
             notes=notes,
         )
-        await self._session.commit()
+
         return task
 
     async def update_task(
@@ -68,8 +68,6 @@ class TaskService:
         **kwargs: Any,
     ) -> Task | None:
         updated = await self._tasks.update(task_id, **kwargs)
-        if updated:
-            await self._session.commit()
         return updated
 
     async def toggle_task(self, task_id: int) -> Task | None:
@@ -80,12 +78,12 @@ class TaskService:
             TaskStatus.pending if task.status == TaskStatus.done else TaskStatus.done
         )
         updated = await self._tasks.update(task_id, status=new_status)
-        await self._session.commit()
+
         return updated
 
     async def delete_task(self, task_id: int) -> bool:
         result = await self._tasks.delete(task_id)
-        await self._session.commit()
+
         return result
 
     async def postpone_task(self, task_id: int) -> Task | None:
@@ -94,7 +92,7 @@ class TaskService:
             date=_today() + timedelta(days=1),
             status=TaskStatus.pending,
         )
-        await self._session.commit()
+
         return updated
 
     async def postpone_pending_to_tomorrow(self) -> int:
@@ -105,7 +103,7 @@ class TaskService:
         tomorrow = _today() + timedelta(days=1)
         for task in pending:
             await self._tasks.update(task.id, date=tomorrow)
-        await self._session.commit()
+
         return len(pending)
 
     async def move_to_backlog(self, task_id: int) -> bool:
@@ -118,7 +116,7 @@ class TaskService:
             notes=task.notes,
         )
         await self._tasks.delete(task_id)
-        await self._session.commit()
+
         return True
 
     # ── Бэклог ──────────────────────────────────────────────────────────
@@ -138,10 +136,22 @@ class TaskService:
             status=TaskStatus.pending,
         )
         await self._backlog.delete(item_id)
-        await self._session.commit()
+
         return task
+
+    async def create_backlog_item(
+        self,
+        title: str,
+        reason: str | None = None,
+        notes: str | None = None,
+    ) -> BacklogItem:
+        return await self._backlog.create(
+            title=title,
+            reason=reason,
+            notes=notes,
+        )
 
     async def delete_backlog_item(self, item_id: int) -> bool:
         result = await self._backlog.delete(item_id)
-        await self._session.commit()
+
         return result

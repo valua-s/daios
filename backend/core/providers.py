@@ -82,8 +82,15 @@ class AppProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     async def get_session(self) -> AsyncIterator[AsyncSession]:
-        async with AsyncSessionFactory() as session:
+        session = AsyncSessionFactory()
+        try:
             yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
     @provide(scope=Scope.REQUEST)
     def get_task_repo(self, session: AsyncSession) -> TaskRepository:

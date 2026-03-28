@@ -4,7 +4,7 @@ from datetime import date, time
 
 from dishka.integrations.litestar import FromDishka
 from litestar import Controller, delete, get, patch, post
-from litestar.exceptions import NotFoundException
+from litestar.exceptions import HTTPException, NotFoundException
 from litestar.params import Parameter
 
 from backend.api.schemas import CreateTaskRequest, TaskDTO, UpdateTaskRequest
@@ -74,13 +74,16 @@ class TaskController(Controller):
         if data.clear_time:
             fields["scheduled_time"] = None
         elif data.scheduled_time is not None:
-            fields["scheduled_time"] = time.fromisoformat(data.scheduled_time)
+            try:
+                fields["scheduled_time"] = time.fromisoformat(data.scheduled_time)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid time format")
         if data.clear_notes:
             fields["notes"] = None
         elif data.notes is not None:
             fields["notes"] = data.notes
         if not fields:
-            raise NotFoundException(detail="Nothing to update")
+            raise HTTPException(status_code=400, detail="Nothing to update")
         task = await task_service.update_task(task_id, **fields)
         if task is None:
             raise NotFoundException(detail=f"Task {task_id} not found")

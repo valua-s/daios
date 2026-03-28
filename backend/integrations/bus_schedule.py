@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, time
+from zoneinfo import ZoneInfo
 
 import httpx
-import pytz
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
+from backend.core.config import settings
 from backend.integrations.base import BaseIntegration
 
 
@@ -39,7 +40,7 @@ class BusScheduleParser(BaseIntegration):
 
         soup = BeautifulSoup(response.text, "html.parser")
         rows = soup.find_all("tr")
-        now = datetime.now(pytz.timezone("Europe/Moscow")).time()
+        now = datetime.now(ZoneInfo(settings.app_timezone)).time()
         arrivals: list[BusArrival] = []
 
         for row in rows:

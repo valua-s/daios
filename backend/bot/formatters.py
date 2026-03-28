@@ -107,7 +107,7 @@ def format_evening_brief(
     is_weekend: bool = False,
     content_items: list[ContentItem] | None = None,
 ) -> str:
-    lines = [f"🌅 <b>Доброе утро! {today.strftime('%d.%m.%Y')}</b>\n"]
+    lines = [f"🌇 <b>Добрый вечер! {today.strftime('%d.%m.%Y')}</b>\n"]
 
     if not is_weekend and bus_schedule:
         lines.append("🚌 <b>Ближайшие автобусы:</b>")

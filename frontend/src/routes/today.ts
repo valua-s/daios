@@ -6,19 +6,19 @@ import { getTodayTasks, toggleTask, moveTaskToBacklog, deleteTask, getFocus, api
 
 export const todayRouter = new Hono()
 
-todayRouter.get('/:id/done', async (c) => {
+todayRouter.post('/:id/done', async (c) => {
   const id = parseInt(c.req.param('id'))
   await toggleTask(id)
   return c.redirect('/today')
 })
 
-todayRouter.get('/:id/backlog', async (c) => {
+todayRouter.post('/:id/backlog', async (c) => {
   const id = parseInt(c.req.param('id'))
   await moveTaskToBacklog(id)
   return c.redirect('/today')
 })
 
-todayRouter.get('/:id/delete', async (c) => {
+todayRouter.post('/:id/delete', async (c) => {
   const id = parseInt(c.req.param('id'))
   await deleteTask(id)
   return c.redirect('/today')
@@ -103,11 +103,11 @@ todayRouter.get('/', async (c) => {
     return 0
   })
 
-  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
   const rows = sorted.map(t => {
     const doneStyle = t.status === 'done' ? ' style="color:#444;text-decoration:line-through;"' : ''
-    const titleCell = `<div class="task-title"${doneStyle} title="${esc(t.title)}" data-id="${t.id}" data-title="${esc(t.title)}" data-notes="${esc(t.notes ?? '')}" data-time="${t.scheduled_time ? t.scheduled_time.slice(0, 5) : ''}" data-date="${t.date}" data-status="${t.status}" onclick="openDetail(this)">${t.title}</div>`
+    const titleCell = `<div class="task-title"${doneStyle} title="${esc(t.title)}" data-id="${t.id}" data-title="${esc(t.title)}" data-notes="${esc(t.notes ?? '')}" data-time="${t.scheduled_time ? t.scheduled_time.slice(0, 5) : ''}" data-date="${t.date}" data-status="${t.status}" onclick="openDetail(this)">${esc(t.title)}</div>`
     return [
     titleCell,
     t.scheduled_time
@@ -119,16 +119,9 @@ todayRouter.get('/', async (c) => {
     t.status === 'done'
       ? ''
       : `<div style="display:flex; gap:6px; align-items:center; white-space:nowrap;">
-          ${iconBtn('✓', 'Выполнено', `/today/${t.id}/done`, '#3a9e6a')}
-          <a href="/today/${t.id}/backlog" title="В бэклог" style="
-            display:inline-flex; align-items:center; gap:4px;
-            padding:3px 9px; border-radius:5px; font-size:12px;
-            background:#2a2a2a; color:#666; text-decoration:none;
-            border:1px solid #333; transition:all 0.15s;
-          " onmouseover="this.style.color='#aaa';this.style.borderColor='#555'" onmouseout="this.style.color='#666';this.style.borderColor='#333'">
-            бэклог ↗
-          </a>
-          ${iconBtn('✕', 'Удалить', `/today/${t.id}/delete`, '#e05252')}
+          <form method="POST" action="/today/${t.id}/done" style="display:inline;"><button type="submit" title="Выполнено" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:12px;background:#2a2a2a;color:#3a9e6a;border:1px solid #333;cursor:pointer;">✓</button></form>
+          <form method="POST" action="/today/${t.id}/backlog" style="display:inline;"><button type="submit" title="В бэклог" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:12px;background:#2a2a2a;color:#666;border:1px solid #333;cursor:pointer;">бэклог ↗</button></form>
+          <form method="POST" action="/today/${t.id}/delete" style="display:inline;"><button type="submit" title="Удалить" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:12px;background:#2a2a2a;color:#e05252;border:1px solid #333;cursor:pointer;">✕</button></form>
         </div>`,
   ]})
 

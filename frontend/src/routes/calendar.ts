@@ -74,7 +74,7 @@ function getWeekDates(today: Date) {
 }
 
 function esc(s: string) {
-  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 calendarRouter.get('/', async (c) => {
@@ -205,7 +205,8 @@ calendarRouter.get('/', async (c) => {
     </div>
 
     <script>
-      var calTasks = ${tasksJson};
+      function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+      var calTasks = ${tasksJson.replace(/<\//g, '<\\/')};
       var openEl = null;
 
       function taskListHtml(date) {
@@ -215,7 +216,7 @@ calendarRouter.get('/', async (c) => {
           var done = t.status === 'done';
           return '<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #222;">' +
             '<span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:' + (done ? '#3a9e6a' : '#d97706') + ';"></span>' +
-            '<span style="flex:1;font-size:13px;color:' + (done ? '#444' : '#e8e8e8') + ';' + (done ? 'text-decoration:line-through;' : '') + '">' + t.title + '</span>' +
+            '<span style="flex:1;font-size:13px;color:' + (done ? '#444' : '#e8e8e8') + ';' + (done ? 'text-decoration:line-through;' : '') + '">' + escHtml(t.title) + '</span>' +
             (t.time ? '<span style="font-size:12px;color:#555;">' + t.time + '</span>' : '') +
           '</div>';
         }).join('');

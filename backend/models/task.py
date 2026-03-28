@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import enum
-from datetime import date as data, time
+from datetime import date, time
 
-from sqlalchemy import Date, Enum, Text, Time
+import sqlalchemy as sa
+from sqlalchemy import Enum, Text, Time
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.models.base import Base
@@ -32,7 +33,7 @@ class Task(Base):
     priority: Mapped[TaskPriority] = mapped_column(
         Enum(TaskPriority), default=TaskPriority.medium
     )
-    date: Mapped[data] = mapped_column(Date, nullable=False, index=True)
+    date: Mapped[date] = mapped_column(sa.Date, nullable=False, index=True)
     scheduled_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     source: Mapped[str | None] = mapped_column(Text)  # telegram | web | backlog
     notes: Mapped[str | None] = mapped_column(Text)

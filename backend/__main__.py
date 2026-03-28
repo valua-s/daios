@@ -33,9 +33,9 @@ async def _main() -> None:
     app = Litestar(
         route_handlers=[health_check, api_router],
         cors_config=CORSConfig(
-            allow_origins=["*"] if not settings.is_production else [],
+            allow_origins=settings.allow_origins,
         ),
-        debug=True,
+        debug=not settings.is_production,
     )
     setup_dishka(container, app)
     await uvicorn.Server(

@@ -17,6 +17,14 @@ class ContentRepository(BaseRepository[ContentItem]):
         )
         return result.scalar_one_or_none()
 
+    async def get_existing_urls(self, urls: list[str]) -> set[str]:
+        if not urls:
+            return set()
+        result = await self._session.execute(
+            select(ContentItem.url).where(ContentItem.url.in_(urls))
+        )
+        return set(result.scalars().all())
+
     async def get_new_by_topic(self, topic: str, limit: int = 10) -> list[ContentItem]:
         result = await self._session.execute(
             select(ContentItem)

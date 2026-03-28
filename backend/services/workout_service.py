@@ -4,9 +4,19 @@ import json
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.core.config import settings
+
+_tz = ZoneInfo(settings.app_timezone)
+
+
+def _today() -> date:
+    return datetime.now(_tz).date()
+
 
 from backend.integrations.google_sheets import (
     GoogleSheetsClient,
@@ -56,7 +66,7 @@ class WorkoutService:
     async def sync_week(self, week_start: date | None = None) -> int:
         """Загружает все 7 дней недели из Sheets в DB. Возвращает кол-во записей."""
         if week_start is None:
-            today = date.today()
+            today = _today()
             week_start = today - timedelta(days=today.weekday())
 
         synced = 0
@@ -70,7 +80,6 @@ class WorkoutService:
             except Exception:
                 logger.exception("Failed to sync workout for %s", d)
 
-        await self._session.commit()
         logger.info("Synced %d workout days starting %s", synced, week_start)
         return synced
 
@@ -91,7 +100,7 @@ class WorkoutService:
                 },
                 ensure_ascii=False,
             ),
-            fetched_at=datetime.now(),
+            fetched_at=datetime.now(tz=_tz),
         )
 
     @staticmethod

@@ -77,87 +77,113 @@ class ContentService:
     async def collect_rss(self, topics: list[str] | None = None) -> int:
         """Парсит RSS-ленты и сохраняет новые статьи. Возвращает кол-во новых."""
         feeds = {t: v for t, v in _RSS_FEEDS.items() if not topics or t in topics}
-        saved = 0
+        all_items = []
         for topic, urls in feeds.items():
             for url in urls:
-                for item in await self._rss.fetch(url, topic):
-                    if not item.url or await self._repo.get_by_url(item.url):
-                        continue
-                    await self._repo.create(
-                        type=ContentType.article,
-                        url=item.url,
-                        title=item.title,
-                        topic=item.topic,
-                        source="rss",
-                        status=ContentStatus.new,
-                    )
-                    saved += 1
-        await self._session.commit()
+                all_items.extend(await self._rss.fetch(url, topic))
+
+        candidate_urls = [i.url for i in all_items if i.url]
+        existing = await self._repo.get_existing_urls(candidate_urls)
+
+        saved = 0
+        for item in all_items:
+            if not item.url or item.url in existing:
+                continue
+            await self._repo.create(
+                type=ContentType.article,
+                url=item.url,
+                title=item.title,
+                topic=item.topic,
+                source="rss",
+                status=ContentStatus.new,
+            )
+            existing.add(item.url)
+            saved += 1
+
         logger.info("RSS: saved %d new items", saved)
         return saved
 
     async def collect_youtube(self, topics: list[str] | None = None) -> int:
         """Ищет видео на YouTube и сохраняет новые. Возвращает кол-во новых."""
         queries = {t: q for t, q in _YOUTUBE_QUERIES.items() if not topics or t in topics}
-        saved = 0
+        all_videos = []
         for topic, query in queries.items():
-            for video in await self._youtube.search(query, topic, max_results=3):
-                if await self._repo.get_by_url(video.url):
-                    continue
-                await self._repo.create(
-                    type=ContentType.video,
-                    url=video.url,
-                    title=video.title,
-                    topic=video.topic,
-                    source="youtube",
-                    status=ContentStatus.new,
-                    duration_minutes=video.duration_minutes,
-                )
-                saved += 1
-        await self._session.commit()
+            all_videos.extend(await self._youtube.search(query, topic, max_results=3))
+
+        existing = await self._repo.get_existing_urls([v.url for v in all_videos])
+
+        saved = 0
+        for video in all_videos:
+            if video.url in existing:
+                continue
+            await self._repo.create(
+                type=ContentType.video,
+                url=video.url,
+                title=video.title,
+                topic=video.topic,
+                source="youtube",
+                status=ContentStatus.new,
+                duration_minutes=video.duration_minutes,
+            )
+            existing.add(video.url)
+            saved += 1
+
         logger.info("YouTube: saved %d new items", saved)
         return saved
 
     async def collect_vk(self, topics: list[str] | None = None) -> int:
         """Ищет видео в VK и сохраняет новые. Возвращает кол-во новых."""
         queries = {t: q for t, q in _VK_QUERIES.items() if not topics or t in topics}
-        saved = 0
+        all_videos = []
         for topic, query in queries.items():
-            for video in await self._vk.search_videos(query, topic, max_results=3):
-                if await self._repo.get_by_url(video.url):
-                    continue
-                await self._repo.create(
-                    type=ContentType.video,
-                    url=video.url,
-                    title=video.title,
-                    topic=video.topic,
-                    source="vk",
-                    status=ContentStatus.new,
-                    duration_minutes=video.duration_minutes,
-                )
-                saved += 1
-        await self._session.commit()
+            all_videos.extend(await self._vk.search_videos(query, topic, max_results=3))
+
+        existing = await self._repo.get_existing_urls([v.url for v in all_videos])
+
+        saved = 0
+        for video in all_videos:
+            if video.url in existing:
+                continue
+            await self._repo.create(
+                type=ContentType.video,
+                url=video.url,
+                title=video.title,
+                topic=video.topic,
+                source="vk",
+                status=ContentStatus.new,
+                duration_minutes=video.duration_minutes,
+            )
+            existing.add(video.url)
+            saved += 1
+
         logger.info("VK: saved %d new items", saved)
         return saved
 
     async def collect_news(self, topics: list[str] | None = None) -> int:
         """Ищет статьи через NewsAPI и сохраняет новые. Возвращает кол-во новых."""
         queries = {t: q for t, q in _NEWS_QUERIES.items() if not topics or t in topics}
-        saved = 0
+        all_articles = []
         for topic, query in queries.items():
-            for article in await self._news.search(query, topic, max_results=3):
-                if not article.url or await self._repo.get_by_url(article.url):
-                    continue
-                await self._repo.create(
-                    type=ContentType.article,
-                    url=article.url,
-                    title=article.title,
-                    topic=article.topic,
-                    source="newsapi",
-                    status=ContentStatus.new,
-                )
-                saved += 1
-        await self._session.commit()
+            all_articles.extend(await self._news.search(query, topic, max_results=3))
+
+        candidate_urls = [a.url for a in all_articles if a.url]
+        existing = await self._repo.get_existing_urls(candidate_urls)
+
+        saved = 0
+        for article in all_articles:
+            if not article.url or article.url in existing:
+                continue
+            await self._repo.create(
+                type=ContentType.article,
+                url=article.url,
+                title=article.title,
+                topic=article.topic,
+                source="newsapi",
+                status=ContentStatus.new,
+            )
+            existing.add(article.url)
+            saved += 1
+
         logger.info("NewsAPI: saved %d new items", saved)
         return saved
 
@@ -178,10 +204,9 @@ class ContentService:
 
         for item in selected:
             await self._repo.update(item.id, status=ContentStatus.queued)
-        await self._session.commit()
+
         return selected
 
     async def mark_shown(self, item_ids: list[int]) -> None:
         for item_id in item_ids:
             await self._repo.mark_shown(item_id)
-        await self._session.commit()

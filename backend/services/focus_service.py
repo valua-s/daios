@@ -1,11 +1,17 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.config import settings
 from backend.models.focus import Focus, FocusPeriod
 from backend.repositories.focus_repo import FocusRepository
+
+
+def _today() -> date:
+    return datetime.now(ZoneInfo(settings.app_timezone)).date()
 
 
 def _week_key(d: date) -> str:
@@ -33,20 +39,20 @@ class FocusService:
         await self._repo.deactivate_period(FocusPeriod.week)
         focus = await self._repo.create(
             period=FocusPeriod.week,
-            period_key=_week_key(date.today()),
+            period_key=_week_key(_today()),
             description=description,
             is_active=True,
         )
-        await self._session.commit()
+
         return focus
 
     async def set_month_focus(self, description: str) -> Focus:
         await self._repo.deactivate_period(FocusPeriod.month)
         focus = await self._repo.create(
             period=FocusPeriod.month,
-            period_key=_month_key(date.today()),
+            period_key=_month_key(_today()),
             description=description,
             is_active=True,
         )
-        await self._session.commit()
+
         return focus
