@@ -100,7 +100,7 @@ class WorkoutService:
                 },
                 ensure_ascii=False,
             ),
-            fetched_at=datetime.now(tz=_tz),
+            fetched_at=datetime.now(tz=_tz).replace(tzinfo=None),
         )
 
     @staticmethod

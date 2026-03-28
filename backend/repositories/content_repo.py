@@ -44,5 +44,5 @@ class ContentRepository(BaseRepository[ContentItem]):
         await self._session.execute(
             update(ContentItem)
             .where(ContentItem.id == item_id)
-            .values(status=ContentStatus.shown, shown_at=datetime.now(tz=UTC))
+            .values(status=ContentStatus.shown, shown_at=datetime.now(tz=UTC).replace(tzinfo=None))
         )

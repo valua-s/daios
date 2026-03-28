@@ -223,7 +223,7 @@ calendarRouter.get('/', async (c) => {
       }
 
       function toggleDay(el) {
-        var date = el.dataset.scheduled_date;
+        var date = el.dataset.date;
         var isMobile = el.classList.contains('cal-week-day');
 
         if (isMobile) {
@@ -238,11 +238,11 @@ calendarRouter.get('/', async (c) => {
           expand.style.display = 'block';
         } else {
           var panel = document.getElementById('cal-expand');
-          if (panel.style.display !== 'none' && panel.dataset.scheduled_date === date) {
+          if (panel.style.display !== 'none' && panel.dataset.date === date) {
             panel.style.display = 'none';
             return;
           }
-          panel.dataset.scheduled_date = date;
+          panel.dataset.date = date;
           var parts = date.split('-');
           document.getElementById('cal-expand-date').textContent = parts[2] + '.' + parts[1] + '.' + parts[0];
           document.getElementById('cal-expand-list').innerHTML = taskListHtml(date);
