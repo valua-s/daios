@@ -12,13 +12,12 @@ from backend.core.config import settings
 
 engine = create_async_engine(
     settings.database_url,
-    echo=not settings.is_production,  # SQL-лог только в dev
-    pool_pre_ping=True,               # проверять соединение перед использованием
+    pool_pre_ping=True,
 )
 
 AsyncSessionFactory = async_sessionmaker(
     engine,
-    expire_on_commit=False,           # объекты живут после commit без refresh
+    expire_on_commit=False,
 )
 
 

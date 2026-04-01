@@ -63,7 +63,6 @@ def format_content_items(items: list[ContentItem]) -> str:
 
 def format_morning_brief(
     today: date,
-    workout: WorkoutPlan | None,
     tasks: list[Task],
     weather: WeatherData | None = None,
     bus_schedule: list[BusArrival] | None = None,
@@ -85,12 +84,44 @@ def format_morning_brief(
             lines.append(f"  {t} (через {bus.minutes_until} мин) — №{bus.bus_numbers}")
         lines.append("")
 
+    if tasks:
+        lines.append(f"📋 <b>Задачи на сегодня ({len(tasks)}):</b>")
+        for i, task in enumerate(tasks, 1):
+            icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(task.priority.value, "⬜")
+            lines.append(f"  {i}. {icon} {task.title}")
+    else:
+        lines.append("📋 Задач пока нет — добавь через /addtask")
+
+    if content_items:
+        lines.append("")
+        lines.append(format_content_items(content_items))
+
+    return "\n".join(lines)
+
+
+def format_evening_brief(
+    today: date,
+    workout: WorkoutPlan | None,
+    tasks: list[Task],
+    bus_schedule: list[BusArrival] | None = None,
+    is_weekend: bool = False,
+    content_items: list[ContentItem] | None = None,
+) -> str:
+    lines = [f"🌇 <b>Добрый вечер! {today.strftime('%d.%m.%Y')}</b>\n"]
+
+    if not is_weekend and bus_schedule:
+        lines.append("🚌 <b>Ближайшие автобусы:</b>")
+        for bus in bus_schedule:
+            t = bus.departure_time.strftime("%H:%M")
+            lines.append(f"  {t} (через {bus.minutes_until} мин) — №{bus.bus_numbers}")
+        lines.append("")
+
     lines.append(format_workout(workout) + "\n")
 
     if tasks:
         lines.append(f"📋 <b>Задачи на сегодня ({len(tasks)}):</b>")
         for i, task in enumerate(tasks, 1):
-            icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(str(task.priority.value), "⬜")
+            icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(task.priority.value, "⬜")
             lines.append(f"  {i}. {icon} {task.title}")
     else:
         lines.append("📋 Задач пока нет — добавь через /addtask")
@@ -124,6 +155,6 @@ def format_evening_summary(done: list[Task], pending: list[Task]) -> str:
             time_str = f" · {task.scheduled_time.strftime('%H:%M')}" if task.scheduled_time else ""
             lines.append(f"  ⏳ {task.title}{time_str}")
         lines.append("")
-        lines.append("Невыполненные задачи перенесены на завтра.\nМожешь отправить их в бэклог или удалить:")
+        lines.append("Невыполненные задачи будут перенесены в бэклог в полночь.\nМожешь перенести на завтра, отправить в бэклог или удалить:")
 
     return "\n".join(lines)

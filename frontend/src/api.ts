@@ -1,11 +1,11 @@
-const API_URL = process.env.API_URL ?? 'http://daios-api:8000'
+const API_URL = process.env.API_URL ?? 'http://daios_api:8000'
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   let res: Response
   try {
     res = await fetch(`${API_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
       ...options,
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
     })
   } catch (e) {
     throw new Error(`Бэкенд недоступен (${API_URL})`)
@@ -24,7 +24,7 @@ export interface TaskDTO {
   title: string
   status: 'pending' | 'done' | 'cancelled'
   priority: 'low' | 'medium' | 'high'
-  date: string
+  scheduled_date: string
   scheduled_time: string | null
   source: string | null
   notes: string | null
@@ -41,6 +41,22 @@ export const moveTaskToBacklog = (id: number) =>
 
 export const deleteTask = (id: number) =>
   apiFetch<void>(`/api/tasks/${id}`, { method: 'DELETE' })
+
+export const getTasksByRange = (from: string, to: string) =>
+  apiFetch<TaskDTO[]>(`/api/tasks/range?from=${from}&to=${to}`)
+
+export const updateTask = (id: number, data: {
+  title?: string
+  scheduled_date?: string
+  scheduled_time?: string | null
+  notes?: string | null
+  clear_time?: boolean
+  clear_notes?: boolean
+}) =>
+  apiFetch<TaskDTO>(`/api/tasks/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
 
 // ── Backlog ────────────────────────────────────────────────────────────────
 

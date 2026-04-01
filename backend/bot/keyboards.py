@@ -3,14 +3,14 @@ from __future__ import annotations
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from backend.models.task import Task
+from backend.models.task import Task, TaskStatus
 
 
 def task_list_keyboard(tasks: list[Task]) -> InlineKeyboardMarkup:
     """Список задач — тап на задачу открывает меню действий."""
     builder = InlineKeyboardBuilder()
     for task in tasks:
-        status_icon = "✅" if task.status == "done" else "⬜"
+        status_icon = "✅" if task.status == TaskStatus.done else "⬜"
         time_str = f" {task.scheduled_time.strftime('%H:%M')}" if task.scheduled_time else ""
         builder.row(
             InlineKeyboardButton(
@@ -79,7 +79,17 @@ def evening_task_keyboard(task_id: int) -> InlineKeyboardMarkup:
     """Кнопки под каждой невыполненной задачей в вечернем итоге."""
     builder = InlineKeyboardBuilder()
     builder.row(
+        InlineKeyboardButton(text="📅 Завтра", callback_data=f"evening:postpone:{task_id}"),
         InlineKeyboardButton(text="🗂 В бэклог", callback_data=f"evening:move:{task_id}"),
         InlineKeyboardButton(text="🗑 Удалить", callback_data=f"evening:delete:{task_id}"),
+    )
+    return builder.as_markup()
+
+
+def evening_postpone_all_keyboard() -> InlineKeyboardMarkup:
+    """Кнопка массового переноса всех оставшихся задач на завтра."""
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="📅 Перенести все на завтра", callback_data="evening:postpone_all"),
     )
     return builder.as_markup()

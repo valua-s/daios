@@ -27,6 +27,8 @@ focusRouter.get('/', async (c) => {
     return c.html(baseLayout('Фокус', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'focus'))
   }
 
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
   const editForm = (type: 'week' | 'month', current: string) => `
     <form method="POST" action="/focus/${type}" style="display:flex; flex-direction:column; gap:12px;">
       <div style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px;">
@@ -37,7 +39,7 @@ focusRouter.get('/', async (c) => {
         color:#e8e8e8; font-size:14px; padding:10px 12px;
         resize:vertical; outline:none; width:100%; box-sizing:border-box;
         font-family:inherit;
-      " placeholder="Опишите фокус...">${current}</textarea>
+      " placeholder="Опишите фокус...">${esc(current)}</textarea>
       <div>
         <button type="submit" style="
           padding:8px 16px; border-radius:6px; font-size:13px;

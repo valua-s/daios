@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import logging
-from datetime import date
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from backend.agents.base import BaseAgent
 from backend.agents.content_agent import ContentAgent
@@ -10,8 +12,16 @@ from backend.agents.context_agent import ContextAgent
 from backend.agents.evening_agent import EveningAgent
 from backend.agents.task_agent import TaskAgent
 from backend.agents.workout_agent import WorkoutAgent
-from backend.bot.formatters import format_evening_summary, format_morning_brief
-from backend.bot.keyboards import evening_task_keyboard
+from backend.bot.formatters import (
+    format_evening_brief,
+    format_evening_summary,
+    format_morning_brief,
+)
+from backend.bot.keyboards import (
+    evening_postpone_all_keyboard,
+    evening_task_keyboard,
+)
+from backend.core.config import settings
 from backend.integrations.telegram import TelegramNotifier
 from backend.services.task_service import TaskService
 
@@ -39,17 +49,36 @@ class Orchestrator(BaseAgent):
         self._task_service = task_service
         self._notifier = notifier
 
+    async def _run_agents_parallel(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Запускает независимых агентов параллельно и мержит результаты."""
+        results = await asyncio.gather(
+            self._context.run(state),
+            self._workout.run(state),
+            self._tasks.run(state),
+            self._content.run(state),
+        )
+        merged = {**state}
+        for result in results:
+            merged.update(result)
+        return merged
+
     async def run(self, state: dict[str, Any]) -> dict[str, Any]:
         """Утренняя сводка: контекст + тренировка + задачи + контент."""
-        state = await self._context.run(state)
-        state = await self._workout.run(state)
-        state = await self._tasks.run(state)
-        state = await self._content.run(state)
+        state = await self._run_agents_parallel(state)
 
         text = self.build_morning_brief(state)
         await self._notifier.send(text)
 
         return {**state, "morning_brief": text}
+
+    async def run_evening_brief(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Вечерняя сводка: контекст + тренировка + задачи + контент."""
+        state = await self._run_agents_parallel(state)
+
+        text = self.build_evening_brief(state)
+        await self._notifier.send(text)
+
+        return {**state, "evening_brief": text}
 
     async def run_evening(self, state: dict[str, Any]) -> dict[str, Any]:
         """Вечерний итог: анализ задач + перенос невыполненных + отправка."""
@@ -68,18 +97,31 @@ class Orchestrator(BaseAgent):
                 keyboard=evening_task_keyboard(task.id),
             )
 
-        count = await self._task_service.postpone_pending_to_tomorrow()
-        if count:
-            logger.info("Postponed %d tasks to tomorrow", count)
+        if pending:
+            await self._notifier.send(
+                f"👆 {len(pending)} невыполненных — выбери что делать с каждой или перенеси все:",
+                keyboard=evening_postpone_all_keyboard(),
+            )
 
         return {**state, "evening_summary": text}
 
-    def build_morning_brief(self, state: dict[str, Any]) -> str:
+    @staticmethod
+    def build_morning_brief(state: dict[str, Any]) -> str:
         return format_morning_brief(
-            today=date.today(),
-            workout=state.get("workout"),
+            today=datetime.now(ZoneInfo(settings.app_timezone)).date(),
             tasks=state.get("tasks", []),
             weather=state.get("weather"),
+            bus_schedule=state.get("bus_schedule", []),
+            is_weekend=state.get("is_weekend", False),
+            content_items=state.get("content_items", []),
+        )
+
+    @staticmethod
+    def build_evening_brief(state: dict[str, Any]) -> str:
+        return format_evening_brief(
+            today=datetime.now(ZoneInfo(settings.app_timezone)).date(),
+            workout=state.get("workout"),
+            tasks=state.get("tasks", []),
             bus_schedule=state.get("bus_schedule", []),
             is_weekend=state.get("is_weekend", False),
             content_items=state.get("content_items", []),

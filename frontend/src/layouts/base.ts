@@ -31,6 +31,7 @@ export const baseLayout = (title: string, content: string, activePage: string) =
       </div>
 
       ${navItem('/today', '📋', 'Сегодня', activePage === 'today')}
+      ${navItem('/calendar', '📅', 'Календарь', activePage === 'calendar')}
       ${navItem('/backlog', '🗂', 'Бэклог', activePage === 'backlog')}
       ${navItem('/workouts', '🏋️', 'Тренировки', activePage === 'workouts')}
       ${navItem('/focus', '🎯', 'Фокус', activePage === 'focus')}

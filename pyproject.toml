@@ -37,6 +37,7 @@ dependencies = [
     "beautifulsoup4>=4.12",
     "dishka>=1.9.1",
     "valkey>=6.1.1",
+    "pytz>=2026.1.post1",
 ]
 
 [project.optional-dependencies]
@@ -63,3 +64,6 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.ty.rules]
+possibly-missing-attribute = "ignore"

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -10,6 +11,7 @@ from dishka.integrations.aiogram import FromDishka, inject
 
 from backend.bot.formatters import format_workout
 from backend.bot.keyboards import workout_keyboard
+from backend.core.config import settings
 from backend.services.workout_service import WorkoutService
 
 logger = logging.getLogger(__name__)
@@ -19,13 +21,13 @@ router = Router(name="workout")
 @router.callback_query(F.data == "workout:done")
 async def cb_workout_done(callback: CallbackQuery) -> None:
     await callback.message.answer("💪 Отлично, так держать!")
-    await callback.message.edit_reply_markup(reply_markup=None)  # type: ignore[union-attr]
+    await callback.message.edit_reply_markup(reply_markup=None)
 
 
 @router.callback_query(F.data == "workout:skip")
 async def cb_workout_skip(callback: CallbackQuery) -> None:
     await callback.message.answer("👌 Окей, бывает")
-    await callback.message.edit_reply_markup(reply_markup=None)  # type: ignore[union-attr]
+    await callback.message.edit_reply_markup(reply_markup=None)
 
 
 @router.message(Command("workout"))
@@ -36,7 +38,9 @@ async def cmd_workout(
 ) -> None:
     await message.answer("⏳ Загружаю тренировку...")
 
-    workout = await workout_service.get_workout_for_date(date.today())
+    workout = await workout_service.get_workout_for_date(
+        datetime.now(ZoneInfo(settings.app_timezone)).date()
+    )
 
     if workout is None or workout.type == "rest":
         await message.answer("😴 Сегодня день отдыха. Восстанавливайся!")

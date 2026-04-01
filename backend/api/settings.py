@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from dishka.integrations.litestar import FromDishka
 from litestar import Controller, delete, get, patch, post
-from litestar.exceptions import NotFoundException
+from litestar.exceptions import ClientException, NotFoundException
 
 from backend.services.settings_service import ScheduleDTO, SettingsService
+
+_VALID_KEY = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
 @dataclass
@@ -58,6 +61,8 @@ class SettingsController(Controller):
         key: str,
         settings_service: FromDishka[SettingsService],
     ) -> dict[str, bool]:
+        if not _VALID_KEY.match(key):
+            raise ClientException(detail="Invalid key format")
         await settings_service.add_interest(key)
         return await settings_service.get_interests()
 
@@ -67,6 +72,8 @@ class SettingsController(Controller):
         key: str,
         settings_service: FromDishka[SettingsService],
     ) -> None:
+        if not _VALID_KEY.match(key):
+            raise ClientException(detail="Invalid key format")
         await settings_service.delete_interest(key)
 
     @get("/schedules")

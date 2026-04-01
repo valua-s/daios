@@ -47,6 +47,7 @@ class ScheduleRepository:
         if existing:
             existing.cron_expr = cron_expr
             existing.enabled = enabled
+            existing.description = description
             return existing
         schedule = Schedule(
             event_name=event_name,

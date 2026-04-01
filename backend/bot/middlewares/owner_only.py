@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from aiogram import BaseMiddleware
-from aiogram.types import Message, TelegramObject
+from aiogram.types import CallbackQuery, Message, TelegramObject
 
 from backend.core.config import settings
 
@@ -20,8 +20,11 @@ class OwnerOnlyMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
-        if isinstance(event, Message) and event.from_user:
-            if event.from_user.id != settings.telegram_user_id:
+        user = getattr(event, "from_user", None)
+        if user and user.id != settings.telegram_user_id:
+            if isinstance(event, Message):
                 await event.answer("⛔ Этот бот приватный.")
-                return None
+            elif isinstance(event, CallbackQuery):
+                await event.answer("⛔ Этот бот приватный.", show_alert=True)
+            return None
         return await handler(event, data)

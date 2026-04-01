@@ -29,7 +29,7 @@ def _task_to_dto(task: Task) -> TaskDTO:
         title=task.title,
         status=task.status.value,
         priority=task.priority.value,
-        date=task.date,
+        scheduled_date=task.scheduled_date,
         scheduled_time=task.scheduled_time,
         source=task.source,
         notes=task.notes,
@@ -50,12 +50,11 @@ class BacklogController(Controller):
         data: CreateBacklogItemRequest,
         task_service: FromDishka[TaskService],
     ) -> BacklogItemDTO:
-        item = await task_service._backlog.create(
+        item = await task_service.create_backlog_item(
             title=data.title,
             reason=data.reason,
             notes=data.notes,
         )
-        await task_service._session.commit()
         return _item_to_dto(item)
 
     @post("/{item_id:int}/today")

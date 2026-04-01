@@ -4,16 +4,26 @@ import json
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.core.config import settings
+
+_tz = ZoneInfo(settings.app_timezone)
+
+
+def _today() -> date:
+    return datetime.now(_tz).date()
+
 
 from backend.integrations.google_sheets import (
     GoogleSheetsClient,
     parse_workout_text,
 )
 from backend.models.workout_cache import WorkoutCache
-from backend.repositories.base import BaseRepository
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +36,6 @@ class WorkoutPlan:
     details: dict
 
 
-class WorkoutCacheRepository(BaseRepository[WorkoutCache]):
-    model = WorkoutCache
-
-
 class WorkoutService:
     """Тренировки.
 
@@ -40,13 +46,12 @@ class WorkoutService:
     def __init__(self, session: AsyncSession, sheets_client: GoogleSheetsClient) -> None:
         self._session = session
         self._sheets = sheets_client
-        self._cache_repo = WorkoutCacheRepository(session)
 
     # ── Чтение из DB ──────────────────────────────────────────────────────
 
     async def get_workout_for_date(self, target_date: date) -> WorkoutPlan | None:
         result = await self._session.execute(
-            select(WorkoutCache).where(WorkoutCache.date == target_date)
+            select(WorkoutCache).where(WorkoutCache.workout_date == target_date)
         )
         cached = result.scalars().first()
         return self._deserialize(cached.data_json) if cached else None
@@ -56,7 +61,7 @@ class WorkoutService:
     async def sync_week(self, week_start: date | None = None) -> int:
         """Загружает все 7 дней недели из Sheets в DB. Возвращает кол-во записей."""
         if week_start is None:
-            today = date.today()
+            today = _today()
             week_start = today - timedelta(days=today.weekday())
 
         synced = 0
@@ -70,29 +75,32 @@ class WorkoutService:
             except Exception:
                 logger.exception("Failed to sync workout for %s", d)
 
-        await self._session.commit()
         logger.info("Synced %d workout days starting %s", synced, week_start)
         return synced
 
     # ── Внутренние методы ─────────────────────────────────────────────────
 
     async def _upsert_cache(self, target_date: date, plan: WorkoutPlan) -> None:
-        await self._session.execute(
-            delete(WorkoutCache).where(WorkoutCache.date == target_date)
+        data = json.dumps(
+            {
+                "type": plan.type,
+                "description": plan.description,
+                "duration_minutes": plan.duration_minutes,
+                "details": plan.details,
+            },
+            ensure_ascii=False,
         )
-        await self._cache_repo.create(
-            date=target_date,
-            data_json=json.dumps(
-                {
-                    "type": plan.type,
-                    "description": plan.description,
-                    "duration_minutes": plan.duration_minutes,
-                    "details": plan.details,
-                },
-                ensure_ascii=False,
-            ),
-            fetched_at=datetime.utcnow(),
+        now = datetime.now(tz=_tz).replace(tzinfo=None)
+        stmt = (
+            insert(WorkoutCache)
+            .values(workout_date=target_date, data_json=data, fetched_at=now)
+            .on_conflict_do_update(
+                index_elements=["date"],
+                set_={"data_json": data, "fetched_at": now},
+            )
         )
+        await self._session.execute(stmt)
 
-    def _deserialize(self, data_json: str) -> WorkoutPlan:
+    @staticmethod
+    def _deserialize(data_json: str) -> WorkoutPlan:
         return WorkoutPlan(**json.loads(data_json))

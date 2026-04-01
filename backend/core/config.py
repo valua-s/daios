@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import Field, computed_field
+from pydantic import AnyHttpUrl, Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine.url import URL
 
@@ -10,13 +10,13 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="allow"
+        extra="ignore",
     )
 
     docker: bool = False
     # App
     app_env: str = "development"
-    secret_key: str = "change_me"
+    app_timezone: str = "Europe/Moscow"
 
     # PostgreSQL
     db_host: str = "localhost"
@@ -42,7 +42,8 @@ class Settings(BaseSettings):
     minio_secure: bool = False
 
     # Telegram
-    telegram_socks_proxy: str = ""
+    telegram_use_proxy: bool = Field(default=False, description="Enable SOCKS5 proxy for Telegram connections")
+    telegram_socks_proxy: str = Field("", description="SOCKS5 proxy URL, e.g. socks5://user:pass@host:port")
     telegram_bot_token: str = Field(..., description="Bot token from @BotFather")
     telegram_user_id: int = Field(..., description="Your numeric Telegram user ID")
 
@@ -74,6 +75,10 @@ class Settings(BaseSettings):
     # NewsAPI
     news_api_key: str = Field("", description="NewsAPI.org API key")
 
+    # CORS
+    allows_ips: list[AnyHttpUrl] = Field(default_factory=list, description="Your server/public IP for CORS allow_origins")
+    container_frontend: str = Field("daios-frontend", description="Frontend container name for CORS")
+
     # ── Вычисляемые поля ────────────────────────────────────────────────
 
     @property
@@ -92,6 +97,14 @@ class Settings(BaseSettings):
             port=self.db_port if self.docker else self.db_out_port,
             database=self.postgres_db,
         )
+
+    @property
+    def allow_origins(self) -> list[str]:
+        if not self.is_production:
+            return ["*"]
+        origins = [f"http://{self.container_frontend}:3000"]
+        origins.extend(str(ip) for ip in self.allows_ips)
+        return origins
 
     @property
     def is_production(self) -> bool:

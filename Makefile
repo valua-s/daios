@@ -1,5 +1,5 @@
 # ── Окружение ───────────────────────────────────────────────────────────
-ENV ?= local.env
+ENV ?= .env
 
 INFRA    = docker compose -f infra.docker-compose.yml    --env-file $(ENV)
 BACKEND  = docker compose -f backend.docker-compose.yml  --env-file $(ENV)
@@ -9,6 +9,7 @@ FRONTEND = docker compose -f frontend.docker-compose.yml --env-file $(ENV)
   infra-up infra-down \
   backend-up backend-down \
   frontend-up frontend-down \
+  restart-api restart-bot restart-scheduler restart-frontend \
   up down logs \
   logs-api logs-bot logs-scheduler \
   shell-api shell-bot \
@@ -28,6 +29,9 @@ infra-down:
 backend-up:
 	$(BACKEND) up -d
 
+back-rebuild:
+	$(BACKEND) up --build -d
+
 backend-down:
 	$(BACKEND) down
 
@@ -38,6 +42,20 @@ frontend-up:
 
 frontend-down:
 	$(FRONTEND) down
+
+# ── Перезапуск отдельных сервисов ───────────────────────────────────────
+
+restart-api:
+	$(BACKEND) up -d --build api
+
+restart-bot:
+	$(BACKEND) up -d --build bot
+
+restart-scheduler:
+	$(BACKEND) up -d --build scheduler
+
+restart-front:
+	$(FRONTEND) up -d --build frontend
 
 # ── Все сразу ───────────────────────────────────────────────────────────
 

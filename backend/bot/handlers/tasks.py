@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, time
+from datetime import datetime, time
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -17,6 +18,7 @@ from backend.bot.keyboards import (
     task_action_keyboard,
     task_list_keyboard,
 )
+from backend.core.config import settings
 from backend.models.task import TaskStatus
 from backend.services.task_service import TaskService
 
@@ -64,7 +66,7 @@ async def cmd_tasks(
         return
 
     await message.answer(
-        f"📋 <b>Задачи на {date.today().strftime('%d.%m')}:</b>",
+        f"📋 <b>Задачи на {datetime.now(ZoneInfo(settings.app_timezone)).date().strftime('%d.%m')}:</b>",
         reply_markup=task_list_keyboard(tasks),
     )
 
@@ -101,7 +103,7 @@ async def cmd_backlog(
 async def cb_task_add(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(AddTaskState.waiting_for_title)
     await callback.answer()
-    await callback.message.answer("✏️ Напиши текст задачи:")  # type: ignore[union-attr]
+    await callback.message.answer("✏️ Напиши текст задачи:")
 
 
 @router.message(AddTaskState.waiting_for_title)
@@ -129,7 +131,7 @@ async def cb_skip_time(
     task = await task_service.create_task(title=data["title"], source="telegram")
     await state.clear()
     await callback.answer()
-    await callback.message.answer(  # type: ignore[union-attr]
+    await callback.message.answer(
         f"✅ Задача добавлена: <b>{task.title}</b>",
         reply_markup=_after_add_keyboard(),
     )
@@ -189,7 +191,7 @@ async def cb_task_menu(
     status_icon = "✅" if task.status == TaskStatus.done else "⬜"
     time_str = f" · {task.scheduled_time.strftime('%H:%M')}" if task.scheduled_time else ""
     await callback.answer()
-    await callback.message.edit_text(  # type: ignore[union-attr]
+    await callback.message.edit_text(
         f"{status_icon} <b>{task.title}</b>{time_str}\n\nВыбери действие:",
         reply_markup=task_action_keyboard(task_id),
     )
@@ -204,12 +206,12 @@ async def cb_task_back(
     tasks = await task_service.get_today_tasks()
     await callback.answer()
     if tasks:
-        await callback.message.edit_text(  # type: ignore[union-attr]
-            f"📋 <b>Задачи на {date.today().strftime('%d.%m')}:</b>",
+        await callback.message.edit_text(
+            f"📋 <b>Задачи на {datetime.now(ZoneInfo(settings.app_timezone)).date().strftime('%d.%m')}:</b>",
             reply_markup=task_list_keyboard(tasks),
         )
     else:
-        await callback.message.edit_text(  # type: ignore[union-attr]
+        await callback.message.edit_text(
             "📋 На сегодня задач нет.",
             reply_markup=_after_add_keyboard(),
         )
@@ -231,7 +233,7 @@ async def cb_task_toggle(
     icon = "✅" if task.status == TaskStatus.done else "⬜"
     time_str = f" · {task.scheduled_time.strftime('%H:%M')}" if task.scheduled_time else ""
     await callback.answer(f"{icon} {task.title}")
-    await callback.message.edit_text(  # type: ignore[union-attr]
+    await callback.message.edit_text(
         f"{icon} <b>{task.title}</b>{time_str}\n\nВыбери действие:",
         reply_markup=task_action_keyboard(task_id),
     )
@@ -249,12 +251,12 @@ async def cb_task_delete(
 
     tasks = await task_service.get_today_tasks()
     if tasks:
-        await callback.message.edit_text(  # type: ignore[union-attr]
-            f"📋 <b>Задачи на {date.today().strftime('%d.%m')}:</b>",
+        await callback.message.edit_text(
+            f"📋 <b>Задачи на {datetime.now(ZoneInfo(settings.app_timezone)).date().strftime('%d.%m')}:</b>",
             reply_markup=task_list_keyboard(tasks),
         )
     else:
-        await callback.message.edit_text(  # type: ignore[union-attr]
+        await callback.message.edit_text(
             "📋 На сегодня задач нет.",
             reply_markup=_after_add_keyboard(),
         )
@@ -271,7 +273,7 @@ async def cb_backlog_postpone(
     item_id = int(callback.data.split(":")[-1])
     await task_service.move_from_backlog_to_today(item_id)
     await callback.answer("📅 Перенесено на сегодня")
-    await callback.message.delete()  # type: ignore[union-attr]
+    await callback.message.delete()
 
 
 @router.callback_query(F.data.startswith("backlog:move:"))
@@ -286,12 +288,12 @@ async def cb_backlog_move(
 
     tasks = await task_service.get_today_tasks()
     if tasks:
-        await callback.message.edit_text(  # type: ignore[union-attr]
-            f"📋 <b>Задачи на {date.today().strftime('%d.%m')}:</b>",
+        await callback.message.edit_text(
+            f"📋 <b>Задачи на {datetime.now(ZoneInfo(settings.app_timezone)).date().strftime('%d.%m')}:</b>",
             reply_markup=task_list_keyboard(tasks),
         )
     else:
-        await callback.message.edit_text(  # type: ignore[union-attr]
+        await callback.message.edit_text(
             "📋 На сегодня задач нет.",
             reply_markup=_after_add_keyboard(),
         )
@@ -306,10 +308,38 @@ async def cb_backlog_delete(
     item_id = int(callback.data.split(":")[-1])
     await task_service.delete_backlog_item(item_id)
     await callback.answer("🗑 Удалено")
-    await callback.message.delete()  # type: ignore[union-attr]
+    await callback.message.delete()
 
 
 # ── Вечерний итог ─────────────────────────────────────────────────────────────
+
+@router.callback_query(F.data.startswith("evening:postpone:"))
+@inject
+async def cb_evening_postpone(
+    callback: CallbackQuery,
+    task_service: FromDishka[TaskService],
+) -> None:
+    task_id = int(callback.data.split(":")[-1])
+    task = await task_service.postpone_task(task_id)
+    if task:
+        await callback.answer("📅 Перенесено на завтра")
+    else:
+        await callback.answer("Задача не найдена", show_alert=True)
+    await callback.message.delete()
+
+
+@router.callback_query(F.data == "evening:postpone_all")
+@inject
+async def cb_evening_postpone_all(
+    callback: CallbackQuery,
+    task_service: FromDishka[TaskService],
+) -> None:
+    count = await task_service.postpone_pending_to_tomorrow()
+    await callback.answer(f"📅 Перенесено задач: {count}")
+    await callback.message.edit_text(
+        f"📅 {count} задач перенесено на завтра",
+    )
+
 
 @router.callback_query(F.data.startswith("evening:move:"))
 @inject
@@ -320,7 +350,7 @@ async def cb_evening_move(
     task_id = int(callback.data.split(":")[-1])
     await task_service.move_to_backlog(task_id)
     await callback.answer("🗂 Отправлено в бэклог")
-    await callback.message.delete()  # type: ignore[union-attr]
+    await callback.message.delete()
 
 
 @router.callback_query(F.data.startswith("evening:delete:"))
@@ -332,4 +362,4 @@ async def cb_evening_delete(
     task_id = int(callback.data.split(":")[-1])
     await task_service.delete_task(task_id)
     await callback.answer("🗑 Удалено")
-    await callback.message.delete()  # type: ignore[union-attr]
+    await callback.message.delete()

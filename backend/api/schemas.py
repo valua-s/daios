@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, time
 
+from pydantic import BaseModel
+
 
 @dataclass
 class TaskDTO:
@@ -10,7 +12,7 @@ class TaskDTO:
     title: str
     status: str
     priority: str
-    date: date
+    scheduled_date: date
     scheduled_time: time | None
     source: str | None
     notes: str | None
@@ -21,9 +23,19 @@ class CreateTaskRequest:
     title: str
     priority: str = "medium"
     source: str = "web"
-    date: date | None = None
+    scheduled_date: date | None = None
     scheduled_time: time | None = None
     notes: str | None = None
+
+
+class UpdateTaskRequest(BaseModel):
+    model_config = {"from_attributes": True}
+    title: str | None = None
+    scheduled_date: date | None = None
+    scheduled_time: str | None = None
+    notes: str | None = None
+    clear_time: bool = False
+    clear_notes: bool = False
 
 
 @dataclass

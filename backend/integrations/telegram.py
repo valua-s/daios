@@ -22,7 +22,7 @@ def _make_bot() -> Bot:
     """Создаёт Bot с SOCKS5-прокси и без SSL-верификации (если настроено)."""
     ssl_ctx: ssl.SSLContext | bool = False  # NoSSL — как в боте
 
-    if settings.telegram_socks_proxy:
+    if settings.telegram_use_proxy and settings.telegram_socks_proxy:
         connector = ProxyConnector.from_url(settings.telegram_socks_proxy, ssl=ssl_ctx)
     else:
         connector = TCPConnector(ssl=ssl_ctx)
@@ -38,9 +38,11 @@ def _make_bot() -> Bot:
 
         def __init__(self) -> None:
             super().__init__()
-            self._session = aiohttp_session
+            self._session: ClientSession = aiohttp_session
 
-        async def create_session(self) -> ClientSession:  # type: ignore[override]
+        async def create_session(self) -> ClientSession:
+            if not self._session:
+                raise ValueError
             return self._session
 
         async def close(self) -> None:

@@ -30,7 +30,7 @@ class BaseRepository(Generic[ModelT]):
     async def create(self, **kwargs: Any) -> ModelT:
         instance = self.model(**kwargs)
         self._session.add(instance)
-        await self._session.flush()  # получить id без commit
+        await self._session.flush()
         return instance
 
     async def update(self, record_id: int, **kwargs: Any) -> ModelT | None:

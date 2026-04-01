@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from backend.agents.base import BaseAgent
 from backend.core.config import settings
@@ -34,7 +35,7 @@ class ContextAgent(BaseAgent):
         self._bus = bus_parser
 
     async def run(self, state: dict[str, Any]) -> dict[str, Any]:
-        today = date.today()
+        today = datetime.now(ZoneInfo(settings.app_timezone)).date()
         is_weekend = _is_weekend(today)
 
         weather: WeatherData | None = None

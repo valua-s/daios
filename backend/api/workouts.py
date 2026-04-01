@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from dishka.integrations.litestar import FromDishka
 from litestar import Controller, get
 
+from backend.core.config import settings
 from backend.services.workout_service import WorkoutService
 
 DAYS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
@@ -30,7 +32,7 @@ class WorkoutController(Controller):
         self,
         workout_service: FromDishka[WorkoutService],
     ) -> list[WorkoutDTO]:
-        today = date.today()
+        today = datetime.now(ZoneInfo(settings.app_timezone)).date()
         monday = today - timedelta(days=today.weekday())
 
         result = []

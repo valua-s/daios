@@ -67,14 +67,14 @@ async def cmd_setfocus(message: Message, state: FSMContext) -> None:
 
 @router.callback_query(SetFocusState.choosing_period)
 async def cb_focus_period(callback: CallbackQuery, state: FSMContext) -> None:
-    period = callback.data.split(":")[-1]  # type: ignore[union-attr]
+    period = callback.data.split(":")[-1]
     await state.update_data(period=period)
     await state.set_state(SetFocusState.waiting_for_description)
     await callback.answer()
-    await callback.message.delete()  # type: ignore[union-attr]
+    await callback.message.delete()
 
     period_label = "недели" if period == "week" else "месяца"
-    await callback.message.answer(  # type: ignore[union-attr]
+    await callback.message.answer(
         f"✏️ Напиши фокус {period_label}.\n\n"
         "Например: <i>Углубиться в async Python и написать 3 pet-project задачи</i>"
     )

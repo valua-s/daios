@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 
 from backend.models.content import ContentItem, ContentStatus
 from backend.repositories.base import BaseRepository
@@ -16,6 +16,14 @@ class ContentRepository(BaseRepository[ContentItem]):
             select(ContentItem).where(ContentItem.url == url)
         )
         return result.scalar_one_or_none()
+
+    async def get_existing_urls(self, urls: list[str]) -> set[str]:
+        if not urls:
+            return set()
+        result = await self._session.execute(
+            select(ContentItem.url).where(ContentItem.url.in_(urls))
+        )
+        return set(result.scalars().all())
 
     async def get_new_by_topic(self, topic: str, limit: int = 10) -> list[ContentItem]:
         result = await self._session.execute(
@@ -36,5 +44,5 @@ class ContentRepository(BaseRepository[ContentItem]):
         await self._session.execute(
             update(ContentItem)
             .where(ContentItem.id == item_id)
-            .values(status=ContentStatus.shown, shown_at=datetime.now(tz=UTC))
+            .values(status=ContentStatus.shown, shown_at=datetime.now(tz=UTC).replace(tzinfo=None), updated_at=func.now())
         )
