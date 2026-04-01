@@ -111,12 +111,9 @@ class TaskService:
         """Переносит все невыполненные задачи на сегодня на завтра.
         Возвращает количество перенесённых задач.
         """
-        pending = await self._tasks.get_pending_by_date(_today())
-        tomorrow = _today() + timedelta(days=1)
-        for task in pending:
-            await self._tasks.update(task.id, scheduled_date=tomorrow)
-
-        return len(pending)
+        today = _today()
+        tomorrow = today + timedelta(days=1)
+        return await self._tasks.bulk_postpone(today, tomorrow)
 
     async def move_to_backlog(self, task_id: int) -> bool:
         task = await self._tasks.get(task_id)

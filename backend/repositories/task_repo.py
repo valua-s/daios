@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from sqlalchemy import case, select
+from sqlalchemy import case, select, update
 
 from backend.models.task import Task, TaskPriority, TaskStatus
 from backend.repositories.base import BaseRepository
@@ -54,3 +54,12 @@ class TaskRepository(BaseRepository[Task]):
 
     async def mark_done(self, task_id: int) -> Task | None:
         return await self.update(task_id, status=TaskStatus.done)
+
+    async def bulk_postpone(self, from_date: date, to_date: date) -> int:
+        """Переносит все pending-задачи с from_date на to_date. Возвращает кол-во."""
+        result = await self._session.execute(
+            update(Task)
+            .where(Task.scheduled_date == from_date, Task.status == TaskStatus.pending)
+            .values(scheduled_date=to_date)
+        )
+        return result.rowcount

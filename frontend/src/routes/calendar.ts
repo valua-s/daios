@@ -247,6 +247,7 @@ calendarRouter.get('/', async (c) => {
           document.getElementById('cal-expand-date').textContent = parts[2] + '.' + parts[1] + '.' + parts[0];
           document.getElementById('cal-expand-list').innerHTML = taskListHtml(date);
           panel.style.display = 'block';
+          panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       }
 

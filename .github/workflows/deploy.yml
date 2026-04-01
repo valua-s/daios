@@ -1,0 +1,137 @@
+name: Deploy DAIOS
+
+on:
+  push:
+    branches: [main]
+
+env:
+  DEPLOY_DIR: /home/${{ secrets.SSH_USER }}/daios
+
+jobs:
+  # ── Определяем что изменилось ─────────────────────────────────────
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      nginx: ${{ steps.filter.outputs.nginx }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'docker/api/**'
+              - 'docker/bot/**'
+              - 'docker/scheduler/**'
+              - 'backend.docker-compose.yml'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'alembic.ini'
+              - 'migrations/**'
+            frontend:
+              - 'frontend/**'
+              - 'docker/frontend/**'
+              - 'frontend.docker-compose.yml'
+            nginx:
+              - 'docker/nginx/**'
+              - 'nginx.docker-compose.yml'
+
+  # ── Деплой ────────────────────────────────────────────────────────
+  deploy:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.nginx == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Telegram — deploy started
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TG_CHAT_ID }}
+          token: ${{ secrets.TG_BOT_TOKEN }}
+          format: markdown
+          message: |
+            🚀 *Deploy started*
+
+            *Branch:* `${{ github.ref_name }}`
+            *Commit:* `${{ github.sha }}`
+            *Author:* ${{ github.actor }}
+
+            *Changes:*
+            Backend: ${{ needs.changes.outputs.backend }}
+            Frontend: ${{ needs.changes.outputs.frontend }}
+            Nginx: ${{ needs.changes.outputs.nginx }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            cd ${{ env.DEPLOY_DIR }}
+            git pull origin main
+
+            if [ "${{ needs.changes.outputs.backend }}" = "true" ]; then
+              echo "==> Rebuilding backend..."
+              make back-rebuild
+              # Run migrations
+              docker compose -f backend.docker-compose.yml exec -T api alembic upgrade head
+            fi
+
+            if [ "${{ needs.changes.outputs.frontend }}" = "true" ]; then
+              echo "==> Rebuilding frontend..."
+              make restart-front
+            fi
+
+            if [ "${{ needs.changes.outputs.nginx }}" = "true" ]; then
+              echo "==> Reloading nginx..."
+              docker compose -f nginx.docker-compose.yml up -d --force-recreate nginx
+            fi
+
+            echo "==> Deploy complete"
+
+      - name: Telegram — deploy success
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TG_CHAT_ID }}
+          token: ${{ secrets.TG_BOT_TOKEN }}
+          format: markdown
+          message: |
+            ✅ *Deploy successful*
+
+            *Commit:* [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+
+      - name: Telegram — deploy failed
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TG_CHAT_ID }}
+          token: ${{ secrets.TG_BOT_TOKEN }}
+          format: markdown
+          message: |
+            ❌ *Deploy FAILED*
+
+            *Commit:* [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+            *Logs:* [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+  # ── Ничего не изменилось ──────────────────────────────────────────
+  skip:
+    needs: changes
+    if: needs.changes.outputs.backend != 'true' && needs.changes.outputs.frontend != 'true' && needs.changes.outputs.nginx != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Telegram — no deploy needed
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TG_CHAT_ID }}
+          token: ${{ secrets.TG_BOT_TOKEN }}
+          message: |
+            ⏭ No deploy needed — changes don't affect deployable services.
+            Commit: ${{ github.sha }}

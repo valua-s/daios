@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 
 from backend.models.content import ContentItem, ContentStatus
 from backend.repositories.base import BaseRepository
@@ -44,5 +44,5 @@ class ContentRepository(BaseRepository[ContentItem]):
         await self._session.execute(
             update(ContentItem)
             .where(ContentItem.id == item_id)
-            .values(status=ContentStatus.shown, shown_at=datetime.now(tz=UTC).replace(tzinfo=None))
+            .values(status=ContentStatus.shown, shown_at=datetime.now(tz=UTC).replace(tzinfo=None), updated_at=func.now())
         )

@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.config import settings
@@ -23,7 +24,6 @@ from backend.integrations.google_sheets import (
     parse_workout_text,
 )
 from backend.models.workout_cache import WorkoutCache
-from backend.repositories.base import BaseRepository
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +36,6 @@ class WorkoutPlan:
     details: dict
 
 
-class WorkoutCacheRepository(BaseRepository[WorkoutCache]):
-    model = WorkoutCache
-
-
 class WorkoutService:
     """Тренировки.
 
@@ -50,7 +46,6 @@ class WorkoutService:
     def __init__(self, session: AsyncSession, sheets_client: GoogleSheetsClient) -> None:
         self._session = session
         self._sheets = sheets_client
-        self._cache_repo = WorkoutCacheRepository(session)
 
     # ── Чтение из DB ──────────────────────────────────────────────────────
 
@@ -86,22 +81,25 @@ class WorkoutService:
     # ── Внутренние методы ─────────────────────────────────────────────────
 
     async def _upsert_cache(self, target_date: date, plan: WorkoutPlan) -> None:
-        await self._session.execute(
-            delete(WorkoutCache).where(WorkoutCache.workout_date == target_date)
+        data = json.dumps(
+            {
+                "type": plan.type,
+                "description": plan.description,
+                "duration_minutes": plan.duration_minutes,
+                "details": plan.details,
+            },
+            ensure_ascii=False,
         )
-        await self._cache_repo.create(
-            workout_date=target_date,
-            data_json=json.dumps(
-                {
-                    "type": plan.type,
-                    "description": plan.description,
-                    "duration_minutes": plan.duration_minutes,
-                    "details": plan.details,
-                },
-                ensure_ascii=False,
-            ),
-            fetched_at=datetime.now(tz=_tz).replace(tzinfo=None),
+        now = datetime.now(tz=_tz).replace(tzinfo=None)
+        stmt = (
+            insert(WorkoutCache)
+            .values(workout_date=target_date, data_json=data, fetched_at=now)
+            .on_conflict_do_update(
+                index_elements=["date"],
+                set_={"data_json": data, "fetched_at": now},
+            )
         )
+        await self._session.execute(stmt)
 
     @staticmethod
     def _deserialize(data_json: str) -> WorkoutPlan:

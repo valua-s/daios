@@ -15,7 +15,7 @@ from backend.agents.task_agent import TaskAgent
 from backend.agents.workout_agent import WorkoutAgent
 from backend.core.config import Settings, settings
 from backend.core.db import AsyncSessionFactory
-from backend.core.redis import redis_client
+from backend.core.redis import create_redis
 from backend.integrations.bus_schedule import BusScheduleParser
 from backend.integrations.google_sheets import GoogleSheetsClient
 from backend.integrations.news import NewsClient
@@ -41,7 +41,7 @@ class AppProvider(Provider):
 
     @provide(scope=Scope.APP)
     def get_redis(self) -> Redis:
-        return redis_client
+        return create_redis()
 
     @provide(scope=Scope.APP)
     async def get_http_client(self) -> AsyncIterator[httpx.AsyncClient]:

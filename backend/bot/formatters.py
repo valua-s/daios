@@ -87,7 +87,7 @@ def format_morning_brief(
     if tasks:
         lines.append(f"📋 <b>Задачи на сегодня ({len(tasks)}):</b>")
         for i, task in enumerate(tasks, 1):
-            icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(str(task.priority.value), "⬜")
+            icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(task.priority.value, "⬜")
             lines.append(f"  {i}. {icon} {task.title}")
     else:
         lines.append("📋 Задач пока нет — добавь через /addtask")
@@ -121,7 +121,7 @@ def format_evening_brief(
     if tasks:
         lines.append(f"📋 <b>Задачи на сегодня ({len(tasks)}):</b>")
         for i, task in enumerate(tasks, 1):
-            icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(str(task.priority.value), "⬜")
+            icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(task.priority.value, "⬜")
             lines.append(f"  {i}. {icon} {task.title}")
     else:
         lines.append("📋 Задач пока нет — добавь через /addtask")

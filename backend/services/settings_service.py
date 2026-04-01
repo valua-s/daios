@@ -146,11 +146,25 @@ class SettingsService:
 def _cron_to_time(cron: str) -> str:
     """'30 6 * * *' → '06:30'. Для мульти-значений ('0 6,17 * * *') берём первое."""
     parts = cron.split()
+    if len(parts) < 2:
+        return "00:00"
     minute, hour = parts[0], parts[1].split(",")[0]
-    return f"{int(hour):02d}:{int(minute):02d}"
+    try:
+        return f"{int(hour):02d}:{int(minute):02d}"
+    except ValueError:
+        return "00:00"
 
 
-def _time_to_cron(time: str) -> str:
+def _time_to_cron(t: str) -> str:
     """'06:30' → '30 6 * * *'."""
-    h, m = time.split(":")
-    return f"{int(m)} {int(h)} * * *"
+    parts = t.split(":")
+    if len(parts) != 2:
+        raise ValueError(f"Invalid time format: {t!r}, expected HH:MM")
+    h, m = parts
+    try:
+        hour, minute = int(h), int(m)
+    except ValueError:
+        raise ValueError(f"Invalid time format: {t!r}, expected HH:MM")
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        raise ValueError(f"Time out of range: {t!r}")
+    return f"{minute} {hour} * * *"

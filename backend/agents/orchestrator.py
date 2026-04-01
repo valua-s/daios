@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime
 from typing import Any
@@ -48,12 +49,22 @@ class Orchestrator(BaseAgent):
         self._task_service = task_service
         self._notifier = notifier
 
+    async def _run_agents_parallel(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Запускает независимых агентов параллельно и мержит результаты."""
+        results = await asyncio.gather(
+            self._context.run(state),
+            self._workout.run(state),
+            self._tasks.run(state),
+            self._content.run(state),
+        )
+        merged = {**state}
+        for result in results:
+            merged.update(result)
+        return merged
+
     async def run(self, state: dict[str, Any]) -> dict[str, Any]:
         """Утренняя сводка: контекст + тренировка + задачи + контент."""
-        state = await self._context.run(state)
-        state = await self._workout.run(state)
-        state = await self._tasks.run(state)
-        state = await self._content.run(state)
+        state = await self._run_agents_parallel(state)
 
         text = self.build_morning_brief(state)
         await self._notifier.send(text)
@@ -62,10 +73,7 @@ class Orchestrator(BaseAgent):
 
     async def run_evening_brief(self, state: dict[str, Any]) -> dict[str, Any]:
         """Вечерняя сводка: контекст + тренировка + задачи + контент."""
-        state = await self._context.run(state)
-        state = await self._workout.run(state)
-        state = await self._tasks.run(state)
-        state = await self._content.run(state)
+        state = await self._run_agents_parallel(state)
 
         text = self.build_evening_brief(state)
         await self._notifier.send(text)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import signal
 from collections.abc import Callable
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -19,11 +20,9 @@ from backend.scheduler.jobs import (
     make_morning_brief,
     make_sync_workouts,
 )
-from backend.services.settings_service import SettingsService
+from backend.services.settings_service import SCHEDULE_RELOAD_CHANNEL, SettingsService
 
 logger = logging.getLogger(__name__)
-
-SCHEDULE_RELOAD_CHANNEL = "schedule:reload"
 
 # Маппинг event_name → фабрика job-функции
 JOB_FACTORIES: dict[str, Callable[[AsyncContainer], Callable]] = {
@@ -39,15 +38,25 @@ JOB_FACTORIES: dict[str, Callable[[AsyncContainer], Callable]] = {
 def _parse_cron(cron_expr: str) -> list[CronTrigger]:
     """Парсит cron выражение в список триггеров.
 
-    Поддерживает мульти-значения (напр. '0 6,17 * * *' → 2 триггера).
+    Поддерживает мульти-значения (напр. '0 6,17 * * *' → 2 триггера)
+    и day-of-week (напр. '30 6 * * 1-5').
     """
     parts = cron_expr.split()
-    minute, hours_str = parts[0], parts[1]
+    if len(parts) < 5:
+        raise ValueError(f"Invalid cron expression: {cron_expr!r}")
+    minute, hours_str, dom, month, dow = parts[:5]
+    kwargs: dict[str, str | int] = {"timezone": settings.app_timezone}
+    if dom != "*":
+        kwargs["day"] = dom
+    if month != "*":
+        kwargs["month"] = month
+    if dow != "*":
+        kwargs["day_of_week"] = dow
     return [
         CronTrigger(
             hour=int(hour),
             minute=int(minute),
-            timezone=settings.app_timezone,
+            **kwargs,
         )
         for hour in hours_str.split(",")
     ]
@@ -151,9 +160,14 @@ async def main() -> None:
     # Запускаем слушатель Redis для hot-reload
     reload_task = asyncio.create_task(listen_for_reload(redis, scheduler, container))
 
+    stop_event = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, stop_event.set)
+
     try:
-        await asyncio.Event().wait()
-    except (KeyboardInterrupt, SystemExit):
+        await stop_event.wait()
+    finally:
         reload_task.cancel()
         scheduler.shutdown()
         await container.close()
