@@ -23,7 +23,6 @@ class BaseAgent(ABC):
         """
         ...
 
-
     @property
     def name(self) -> str:
         """Имя агента для логов и отладки."""
