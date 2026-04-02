@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 env:
-  DEPLOY_DIR: /home/${{ secrets.SSH_USER }}/daios
+  DEPLOY_DIR: /home/${{ secrets.SSH_LOCAL_USER }}/daios
 
 jobs:
   # ── Определяем что изменилось ─────────────────────────────────────
