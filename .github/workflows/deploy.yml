@@ -63,7 +63,14 @@ jobs:
             Backend: ${{ needs.changes.outputs.backend }}
             Frontend: ${{ needs.changes.outputs.frontend }}
             Nginx: ${{ needs.changes.outputs.nginx }}
-
+      - name: Test whoami
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}  # test with password first
+          port: 22
+          script: whoami
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -71,7 +78,6 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          script_stop: true
           script: |
             set -e
             cd ${{ env.DEPLOY_DIR }}
