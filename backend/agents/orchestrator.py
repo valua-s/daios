@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import datetime
 from typing import Any
@@ -49,22 +48,15 @@ class Orchestrator(BaseAgent):
         self._task_service = task_service
         self._notifier = notifier
 
-    async def _run_agents_parallel(self, state: dict[str, Any]) -> dict[str, Any]:
-        """Запускает независимых агентов параллельно и мержит результаты."""
-        results = await asyncio.gather(
-            self._context.run(state),
-            self._workout.run(state),
-            self._tasks.run(state),
-            self._content.run(state),
-        )
-        merged = {**state}
-        for result in results:
-            merged.update(result)
-        return merged
+    async def _run_agents(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Запускает агентов последовательно — общая DB-сессия."""
+        for agent in (self._context, self._workout, self._tasks, self._content):
+            state = await agent.run(state)
+        return state
 
     async def run(self, state: dict[str, Any]) -> dict[str, Any]:
         """Утренняя сводка: контекст + тренировка + задачи + контент."""
-        state = await self._run_agents_parallel(state)
+        state = await self._run_agents(state)
 
         text = self.build_morning_brief(state)
         await self._notifier.send(text)
@@ -73,7 +65,7 @@ class Orchestrator(BaseAgent):
 
     async def run_evening_brief(self, state: dict[str, Any]) -> dict[str, Any]:
         """Вечерняя сводка: контекст + тренировка + задачи + контент."""
-        state = await self._run_agents_parallel(state)
+        state = await self._run_agents(state)
 
         text = self.build_evening_brief(state)
         await self._notifier.send(text)
@@ -107,22 +99,24 @@ class Orchestrator(BaseAgent):
 
     @staticmethod
     def build_morning_brief(state: dict[str, Any]) -> str:
+        all_items = state.get("content_items", [])
         return format_morning_brief(
             today=datetime.now(ZoneInfo(settings.app_timezone)).date(),
             tasks=state.get("tasks", []),
             weather=state.get("weather"),
             bus_schedule=state.get("bus_schedule", []),
             is_weekend=state.get("is_weekend", False),
-            content_items=state.get("content_items", []),
+            content_items=all_items[:3],
         )
 
     @staticmethod
     def build_evening_brief(state: dict[str, Any]) -> str:
+        all_items = state.get("content_items", [])
         return format_evening_brief(
             today=datetime.now(ZoneInfo(settings.app_timezone)).date(),
             workout=state.get("workout"),
             tasks=state.get("tasks", []),
             bus_schedule=state.get("bus_schedule", []),
             is_weekend=state.get("is_weekend", False),
-            content_items=state.get("content_items", []),
+            content_items=all_items[3:],
         )
