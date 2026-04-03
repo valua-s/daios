@@ -28,7 +28,9 @@ from backend.repositories.backlog_repo import BacklogRepository
 from backend.repositories.focus_repo import FocusRepository
 from backend.repositories.task_repo import TaskRepository
 from backend.services.content_service import ContentService
+from backend.services.focus_resolver import FocusResolver
 from backend.services.focus_service import FocusService
+from backend.services.llm_service import LLMService
 from backend.services.settings_service import SettingsService
 from backend.services.task_service import TaskService
 from backend.services.workout_service import WorkoutService
@@ -79,6 +81,10 @@ class AppProvider(Provider):
     @provide(scope=Scope.APP)
     def get_news_client(self, http_client: httpx.AsyncClient, cfg: Settings) -> NewsClient:
         return NewsClient(http_client, cfg.news_api_key)
+
+    @provide(scope=Scope.APP)
+    def get_llm_service(self, cfg: Settings) -> LLMService:
+        return LLMService(cfg)
 
     @provide(scope=Scope.REQUEST)
     async def get_session(self) -> AsyncIterator[AsyncSession]:
@@ -152,12 +158,21 @@ class AppProvider(Provider):
         return ContentService(session, rss_parser, youtube_client, vk_client, news_client)
 
     @provide(scope=Scope.REQUEST)
+    def get_focus_resolver(
+        self,
+        focus_service: FocusService,
+        settings_service: SettingsService,
+    ) -> FocusResolver:
+        return FocusResolver(focus_service, settings_service)
+
+    @provide(scope=Scope.REQUEST)
     def get_content_agent(
         self,
         content_service: ContentService,
-        focus_service: FocusService,
+        focus_resolver: FocusResolver,
+        llm_service: LLMService,
     ) -> ContentAgent:
-        return ContentAgent(content_service, focus_service)
+        return ContentAgent(content_service, focus_resolver, llm_service)
 
     @provide(scope=Scope.REQUEST)
     def get_evening_agent(self, task_service: TaskService) -> EveningAgent:

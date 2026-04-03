@@ -9,6 +9,7 @@ from litestar import Litestar, get
 from litestar.config.cors import CORSConfig
 
 from backend.api.backlog import BacklogController
+from backend.api.debug import DebugController
 from backend.api.focus import FocusController
 from backend.api.settings import SettingsController
 from backend.api.tasks import TaskController
@@ -28,7 +29,7 @@ async def _main() -> None:
     container = make_async_container(AppProvider())
     api_router = DishkaRouter(
         path="",
-        route_handlers=[TaskController, BacklogController, FocusController, WorkoutController, SettingsController],
+        route_handlers=[TaskController, BacklogController, FocusController, WorkoutController, SettingsController, DebugController],
     )
     app = Litestar(
         route_handlers=[health_check, api_router],

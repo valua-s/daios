@@ -10,6 +10,7 @@ from backend.integrations.vk import VKClient
 from backend.integrations.youtube import YouTubeClient
 from backend.models.content import ContentItem, ContentStatus, ContentType
 from backend.repositories.content_repo import ContentRepository
+from backend.services.llm_service import SearchQuery
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +189,7 @@ class ContentService:
         return saved
 
     async def select_for_morning(
-        self, priority_topics: list[str], n: int = 3
+        self, priority_topics: list[str], n: int = 6
     ) -> list[ContentItem]:
         """Выбирает n материалов для утреннего показа, приоритет по топикам.
         Переводит отобранные в статус queued.
@@ -206,6 +207,66 @@ class ContentService:
             await self._repo.update(item.id, status=ContentStatus.queued)
 
         return selected
+
+    async def get_new_candidates(
+        self, priority_topics: list[str], limit: int = 30,
+    ) -> list[ContentItem]:
+        """Все new-элементы из БД, приоритет по топикам."""
+        ordered = priority_topics + [t for t in ALL_TOPICS if t not in priority_topics]
+        candidates: list[ContentItem] = []
+        for topic in ordered:
+            if len(candidates) >= limit:
+                break
+            items = await self._repo.get_new_by_topic(topic, limit=limit - len(candidates))
+            candidates.extend(items)
+        return candidates[:limit]
+
+    async def mark_queued(self, items: list[ContentItem]) -> None:
+        """Пометить выбранные элементы как queued."""
+        for item in items:
+            await self._repo.update(item.id, status=ContentStatus.queued)
+
+    async def collect_dynamic(self, queries: list[SearchQuery]) -> int:
+        """Выполнить LLM-сгенерированные запросы через NewsAPI/YouTube."""
+        saved = 0
+        for q in queries:
+            if q.source == "newsapi":
+                articles = await self._news.search(q.query, q.topic, max_results=3)
+                candidate_urls = [a.url for a in articles if a.url]
+                existing = await self._repo.get_existing_urls(candidate_urls)
+                for article in articles:
+                    if not article.url or article.url in existing:
+                        continue
+                    await self._repo.create(
+                        type=ContentType.article,
+                        url=article.url,
+                        title=article.title,
+                        topic=q.topic,
+                        source="newsapi_dynamic",
+                        status=ContentStatus.new,
+                    )
+                    existing.add(article.url)
+                    saved += 1
+            elif q.source == "youtube":
+                videos = await self._youtube.search(q.query, q.topic, max_results=3)
+                existing = await self._repo.get_existing_urls([v.url for v in videos])
+                for video in videos:
+                    if video.url in existing:
+                        continue
+                    await self._repo.create(
+                        type=ContentType.video,
+                        url=video.url,
+                        title=video.title,
+                        topic=q.topic,
+                        source="youtube_dynamic",
+                        status=ContentStatus.new,
+                        duration_minutes=video.duration_minutes,
+                    )
+                    existing.add(video.url)
+                    saved += 1
+
+        logger.info("Dynamic collection: saved %d new items from %d queries", saved, len(queries))
+        return saved
 
     async def mark_shown(self, item_ids: list[int]) -> None:
         for item_id in item_ids:

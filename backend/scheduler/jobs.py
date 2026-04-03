@@ -7,6 +7,8 @@ from dishka import AsyncContainer
 
 from backend.agents.orchestrator import Orchestrator
 from backend.services.content_service import ContentService
+from backend.services.focus_resolver import FocusResolver
+from backend.services.llm_service import LLMService
 from backend.services.task_service import TaskService
 from backend.services.workout_service import WorkoutService
 
@@ -23,6 +25,20 @@ def make_collect_content(container: AsyncContainer) -> Callable:
             vk = await svc.collect_vk()
             news = await svc.collect_news()
             logger.info("Content collected: rss=%d yt=%d vk=%d news=%d", rss, yt, vk, news)
+
+            # Динамический сбор по LLM-запросам
+            try:
+                llm = await request_container.get(LLMService)
+                resolver = await request_container.get(FocusResolver)
+                focus = await resolver.resolve()
+                queries = await llm.generate_search_queries(focus.description, focus.topics)
+                dynamic = await svc.collect_dynamic(queries)
+                logger.info(
+                    "Dynamic content collected: %d items from %d queries (focus: %s)",
+                    dynamic, len(queries), focus.source,
+                )
+            except Exception:
+                logger.exception("Dynamic content collection failed, continuing with static only")
 
     return job
 

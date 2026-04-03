@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import AnyHttpUrl, Field, computed_field
+from pydantic import AnyHttpUrl, Field, computed_field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine.url import URL
 
@@ -48,12 +48,12 @@ class Settings(BaseSettings):
     telegram_user_id: int = Field(..., description="Your numeric Telegram user ID")
 
     # LLM (OpenRouter — OpenAI-совместимый API)
-    openai_api_key: str = Field(..., description="OpenRouter API key")
+    openai_api_key: SecretStr = Field(..., description="OpenRouter API key")
     openai_base_url: str = "https://openrouter.ai/api/v1"
 
-    model_orchestrator: str = "mistralai/mistral-7b-instruct"
-    model_agents: str = "mistralai/mistral-7b-instruct"
-    model_summary: str = "mistralai/mistral-7b-instruct"
+    model_orchestrator: str = "mistralai/mistral-7b-instruct-v0.1"
+    model_agents: str = "mistralai/mistral-7b-instruct-v0.1"
+    model_summary: str = "mistralai/mistral-7b-instruct-v0.1"
 
     # Google Sheets
     google_credentials_file: str = "secrets/credentials.json"
