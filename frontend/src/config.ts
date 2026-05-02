@@ -1,1 +1,1 @@
-export const API_URL = process.env.API_URL ?? 'http://localhost:12001'
+export const API_URL = process.env.API_URL ?? 'http://daios-api:8000'
