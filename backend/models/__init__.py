@@ -1,6 +1,7 @@
 # Alembic должен видеть все модели для автогенерации миграций
 from __future__ import annotations
 
+from backend.auth.models.user import User
 from backend.models.backlog import BacklogItem
 from backend.models.base import Base
 from backend.models.content import ContentItem
@@ -17,6 +18,7 @@ __all__ = [
     "Focus",
     "Schedule",
     "Task",
+    "User",
     "UserSetting",
     "WorkoutCache",
 ]

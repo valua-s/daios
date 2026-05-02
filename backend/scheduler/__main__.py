@@ -20,7 +20,10 @@ from backend.scheduler.jobs import (
     make_morning_brief,
     make_sync_workouts,
 )
-from backend.services.settings_service import SCHEDULE_RELOAD_CHANNEL, SettingsService
+from backend.services.settings_service import (
+    SCHEDULE_RELOAD_CHANNEL,
+    SettingsService,
+)
 
 logger = logging.getLogger(__name__)
 

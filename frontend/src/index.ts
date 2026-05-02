@@ -1,10 +1,14 @@
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
 import { todayRouter } from './routes/today'
 import { backlogRouter } from './routes/backlog'
 import { workoutsRouter } from './routes/workouts'
 import { focusRouter } from './routes/focus'
 import { settingsRouter } from './routes/settings'
 import { calendarRouter } from './routes/calendar'
+import { authRouter } from './routes/auth'
+import { isJwtValid } from './auth/api-auth'
+import { API_URL } from './config'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
@@ -21,21 +25,44 @@ app.get('/manifest.json', (c) => {
   return c.text(manifestCache, 200, { 'Content-Type': 'application/json' })
 })
 
-const API_URL = process.env.API_URL ?? 'http://daios_api:8000'
+const SESSION_COOKIE = 'daios_session'
 
-// Proxy /api/* requests to backend (for client-side JS)
+// Proxy /api/* requests to backend (for client-side JS).
+// Forwards the session JWT as Bearer token so guarded endpoints accept the request.
 app.all('/api/*', async (c) => {
   const reqUrl = new URL(c.req.url)
   const url = `${API_URL}${c.req.path}${reqUrl.search}`
+  const headers: Record<string, string> = {
+    'Content-Type': c.req.header('Content-Type') || 'application/json',
+  }
+  const token = getCookie(c, SESSION_COOKIE)
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
   const res = await fetch(url, {
     method: c.req.method,
-    headers: { 'Content-Type': c.req.header('Content-Type') || 'application/json' },
+    headers,
     body: ['GET', 'HEAD'].includes(c.req.method) ? undefined : await c.req.text(),
   })
   return new Response(res.body, {
     status: res.status,
     headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' },
   })
+})
+
+// Auth routes (public)
+app.route('/auth', authRouter)
+
+// Auth middleware — protect everything except /auth/*, static assets, /api/*
+app.use('*', async (c, next) => {
+  const path = c.req.path
+  if (path.startsWith('/auth') || path === '/style.css' || path === '/manifest.json' || path.startsWith('/api/')) {
+    return next()
+  }
+  const token = getCookie(c, SESSION_COOKIE)
+  if (!isJwtValid(token)) {
+    return c.redirect('/auth/login')
+  }
+  return next()
 })
 
 app.get('/', (c) => c.redirect('/today'))

@@ -5,8 +5,8 @@ import logging
 import re
 from dataclasses import dataclass
 
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
 
 from backend.core.config import Settings
 
@@ -56,7 +56,7 @@ class LLMService:
             f"My current focus: {focus_description}\n"
             f"My active topics: {', '.join(topics)}\n\n"
             "TASK: Generate EXACTLY 6 search queries to find content that helps me with my focus.\n"
-            "Each query targets either \"newsapi\" (articles) or \"youtube\" (videos).\n\n"
+            'Each query targets either "newsapi" (articles) or "youtube" (videos).\n\n'
             "Rules:\n"
             "- EXACTLY 6 queries, no more, no less\n"
             "- Mix topics, sources, and languages (Russian and English)\n"
@@ -115,7 +115,7 @@ class LLMService:
             "2. Diversity of topics (don't pick all from one topic)\n"
             "3. Mix of content types (articles and videos)\n"
             "4. Freshness and practical value\n\n"
-            f"IMPORTANT: You MUST return EXACTLY {n} IDs. Not {n-1}, not {n+1}, exactly {n}.\n"
+            f"IMPORTANT: You MUST return EXACTLY {n} IDs. Not {n - 1}, not {n + 1}, exactly {n}.\n"
             f"Response format — a JSON array of exactly {n} integer IDs, ordered by relevance:\n"
             f"[1, 2, 3, 4, 5, 6]"
         ))

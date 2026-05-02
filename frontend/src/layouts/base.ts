@@ -36,6 +36,12 @@ export const baseLayout = (title: string, content: string, activePage: string) =
       ${navItem('/workouts', '🏋️', 'Тренировки', activePage === 'workouts')}
       ${navItem('/focus', '🎯', 'Фокус', activePage === 'focus')}
       ${navItem('/settings', '⚙️', 'Настройки', activePage === 'settings')}
+
+      <div style="margin-top:auto; padding:16px 20px; border-top:1px solid #2a2a2a;">
+        <a href="/auth/logout" style="display:flex; align-items:center; gap:10px; font-size:13px; text-decoration:none; color:#666; transition: color 0.15s;" onmouseover="this.style.color='#e8e8e8'" onmouseout="this.style.color='#666'">
+          <span style="width:20px; text-align:center;">🚪</span>Log out
+        </a>
+      </div>
     </nav>
 
     <!-- Main -->

@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
 import { baseLayout } from '../layouts/base'
 import { getTasksByRange, type TaskDTO } from '../api'
 
@@ -78,6 +79,7 @@ function esc(s: string) {
 }
 
 calendarRouter.get('/', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const now = new Date()
   const yearParam = c.req.query('year')
   const monthParam = c.req.query('month')
@@ -91,7 +93,7 @@ calendarRouter.get('/', async (c) => {
 
   let tasks: TaskDTO[]
   try {
-    tasks = await getTasksByRange(rangeFrom, rangeTo)
+    tasks = await getTasksByRange(rangeFrom, rangeTo, token)
   } catch (e: any) {
     return c.html(baseLayout('Календарь', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'calendar'))
   }

@@ -104,3 +104,5 @@ docker-compose.override.yml
 /secrets
 CONTEXT.md
 CODE_REVIEW.md
+
+*mcp*

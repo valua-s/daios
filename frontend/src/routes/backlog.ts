@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
 import { baseLayout } from '../layouts/base'
 import { card, sectionTitle, emptyState } from '../components/card'
 import { table } from '../components/table'
@@ -7,21 +8,24 @@ import { getBacklog, moveBacklogToToday, deleteBacklogItem } from '../api'
 export const backlogRouter = new Hono()
 
 backlogRouter.post('/:id/restore', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const id = parseInt(c.req.param('id'))
-  await moveBacklogToToday(id)
+  await moveBacklogToToday(id, token)
   return c.redirect('/backlog')
 })
 
 backlogRouter.post('/:id/delete', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const id = parseInt(c.req.param('id'))
-  await deleteBacklogItem(id)
+  await deleteBacklogItem(id, token)
   return c.redirect('/backlog')
 })
 
 backlogRouter.get('/', async (c) => {
+  const token = getCookie(c, 'daios_session')
   let items: Awaited<ReturnType<typeof getBacklog>>
   try {
-    items = await getBacklog()
+    items = await getBacklog(token)
   } catch (e: any) {
     return c.html(baseLayout('Бэклог', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'backlog'))
   }

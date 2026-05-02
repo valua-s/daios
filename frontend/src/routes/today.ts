@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
 import { baseLayout } from '../layouts/base'
 import { card, sectionTitle } from '../components/card'
 import { table, badge, iconBtn } from '../components/table'
@@ -7,24 +8,28 @@ import { getTodayTasks, toggleTask, moveTaskToBacklog, deleteTask, getFocus, api
 export const todayRouter = new Hono()
 
 todayRouter.post('/:id/done', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const id = parseInt(c.req.param('id'))
-  await toggleTask(id)
+  await toggleTask(id, token)
   return c.redirect('/today')
 })
 
 todayRouter.post('/:id/backlog', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const id = parseInt(c.req.param('id'))
-  await moveTaskToBacklog(id)
+  await moveTaskToBacklog(id, token)
   return c.redirect('/today')
 })
 
 todayRouter.post('/:id/delete', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const id = parseInt(c.req.param('id'))
-  await deleteTask(id)
+  await deleteTask(id, token)
   return c.redirect('/today')
 })
 
 todayRouter.post('/new', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const body = await c.req.parseBody()
   const title = String(body.title ?? '').trim()
   if (!title) return c.redirect('/today')
@@ -45,18 +50,19 @@ todayRouter.post('/new', async (c) => {
       notes: body.notes || null,
       source: 'web',
     }),
-  })
+  }, token)
   return c.redirect('/today')
 })
 
 todayRouter.get('/', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const today = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })
   const todayIso = new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD в серверном timezone
 
   let tasks: Awaited<ReturnType<typeof getTodayTasks>>
   let focus: Awaited<ReturnType<typeof getFocus>>
   try {
-    ;[tasks, focus] = await Promise.all([getTodayTasks(), getFocus()])
+    ;[tasks, focus] = await Promise.all([getTodayTasks(token), getFocus(token)])
   } catch (e: any) {
     return c.html(baseLayout('Сегодня', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'today'))
   }

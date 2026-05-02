@@ -8,6 +8,7 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.agents.content_agent import ContentAgent
+from backend.auth.service.auth_service import AuthService
 from backend.agents.context_agent import ContextAgent
 from backend.agents.evening_agent import EveningAgent
 from backend.agents.orchestrator import Orchestrator
@@ -97,6 +98,14 @@ class AppProvider(Provider):
             raise
         finally:
             await session.close()
+
+    @provide(scope=Scope.REQUEST)
+    def get_auth_service(self, session: AsyncSession, cfg: Settings) -> AuthService:
+        return AuthService(
+            session=session,
+            secret_key=cfg.jwt_secret_key.get_secret_value(),
+            algorithm=cfg.jwt_algorithm,
+        )
 
     @provide(scope=Scope.REQUEST)
     def get_task_repo(self, session: AsyncSession) -> TaskRepository:

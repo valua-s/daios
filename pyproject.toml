@@ -38,6 +38,11 @@ dependencies = [
     "dishka>=1.9.1",
     "valkey>=6.1.1",
     "pytz>=2026.1.post1",
+    "mcp>=1.27.0",
+    # Auth
+    "pyjwt>=2.8",
+    "bcrypt>=4.1",
+    "pydantic[email]>=2.7",
 ]
 
 [project.optional-dependencies]
