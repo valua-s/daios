@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
 import { baseLayout } from '../layouts/base'
 import { card, sectionTitle } from '../components/card'
 import { getFocus, setWeekFocus, setMonthFocus } from '../api'
@@ -6,23 +7,26 @@ import { getFocus, setWeekFocus, setMonthFocus } from '../api'
 export const focusRouter = new Hono()
 
 focusRouter.post('/week', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const body = await c.req.parseBody()
   const description = String(body.description ?? '').trim()
-  if (description) await setWeekFocus(description)
+  if (description) await setWeekFocus(description, token)
   return c.redirect('/focus')
 })
 
 focusRouter.post('/month', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const body = await c.req.parseBody()
   const description = String(body.description ?? '').trim()
-  if (description) await setMonthFocus(description)
+  if (description) await setMonthFocus(description, token)
   return c.redirect('/focus')
 })
 
 focusRouter.get('/', async (c) => {
+  const token = getCookie(c, 'daios_session')
   let focus: Awaited<ReturnType<typeof getFocus>>
   try {
-    focus = await getFocus()
+    focus = await getFocus(token)
   } catch (e: any) {
     return c.html(baseLayout('Фокус', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'focus'))
   }

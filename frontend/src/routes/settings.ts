@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
 import { baseLayout } from '../layouts/base'
 import { card, sectionTitle } from '../components/card'
 import { getInterests, setInterests, getSchedules, updateSchedule, addInterest, deleteInterest } from '../api'
@@ -6,44 +7,49 @@ import { getInterests, setInterests, getSchedules, updateSchedule, addInterest, 
 export const settingsRouter = new Hono()
 
 settingsRouter.post('/interests', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const body = await c.req.parseBody()
   const keys = String(body._interest_keys ?? '').split(',').filter(Boolean)
   const interests: Record<string, boolean> = {}
   for (const key of keys) {
     interests[key] = body[key] === 'on'
   }
-  await setInterests(interests)
+  await setInterests(interests, token)
   return c.redirect('/settings')
 })
 
 settingsRouter.post('/interests/add', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const body = await c.req.parseBody()
   const key = String(body.key ?? '').trim().toLowerCase().replace(/\s+/g, '_')
-  if (key) await addInterest(key)
+  if (key) await addInterest(key, token)
   return c.redirect('/settings')
 })
 
 settingsRouter.post('/interests/:key/delete', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const key = c.req.param('key')
-  await deleteInterest(key)
+  await deleteInterest(key, token)
   return c.redirect('/settings')
 })
 
 settingsRouter.post('/schedules/:event_name', async (c) => {
+  const token = getCookie(c, 'daios_session')
   const event_name = c.req.param('event_name')
   const body = await c.req.parseBody()
   const time = String(body.time ?? '06:00')
   const enabled = body.enabled === 'on'
-  await updateSchedule(event_name, time, enabled)
+  await updateSchedule(event_name, time, enabled, token)
   return c.redirect('/settings')
 })
 
 settingsRouter.get('/', async (c) => {
+  const token = getCookie(c, 'daios_session')
   let interests: Record<string, boolean>
   let schedules: Awaited<ReturnType<typeof getSchedules>>
 
   try {
-    ;[interests, schedules] = await Promise.all([getInterests(), getSchedules()])
+    ;[interests, schedules] = await Promise.all([getInterests(token), getSchedules(token)])
   } catch (e: any) {
     return c.html(baseLayout('Настройки', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'settings'))
   }

@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
 import { baseLayout } from '../layouts/base'
 import { card, sectionTitle } from '../components/card'
 import { table, badge } from '../components/table'
@@ -21,9 +22,10 @@ const TYPE_COLORS: Record<WorkoutDTO['type'], string> = {
 }
 
 workoutsRouter.get('/', async (c) => {
+  const token = getCookie(c, 'daios_session')
   let workouts: Awaited<ReturnType<typeof getWeekWorkouts>>
   try {
-    workouts = await getWeekWorkouts()
+    workouts = await getWeekWorkouts(token)
   } catch (e: any) {
     return c.html(baseLayout('Тренировки', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'workouts'))
   }

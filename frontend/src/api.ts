@@ -1,11 +1,16 @@
-const API_URL = process.env.API_URL ?? 'http://daios_api:8000'
+import { API_URL } from './config'
 
-export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+export async function apiFetch<T>(path: string, options?: RequestInit, token?: string): Promise<T> {
   let res: Response
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options?.headers as Record<string, string> | undefined),
+  }
+  if (token) headers['Authorization'] = `Bearer ${token}`
   try {
     res = await fetch(`${API_URL}${path}`, {
       ...options,
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      headers,
     })
   } catch (e) {
     throw new Error(`Бэкенд недоступен (${API_URL})`)
@@ -30,20 +35,20 @@ export interface TaskDTO {
   notes: string | null
 }
 
-export const getTodayTasks = () =>
-  apiFetch<TaskDTO[]>('/api/tasks/today')
+export const getTodayTasks = (token?: string) =>
+  apiFetch<TaskDTO[]>('/api/tasks/today', undefined, token)
 
-export const toggleTask = (id: number) =>
-  apiFetch<TaskDTO>(`/api/tasks/${id}/toggle`, { method: 'PATCH' })
+export const toggleTask = (id: number, token?: string) =>
+  apiFetch<TaskDTO>(`/api/tasks/${id}/toggle`, { method: 'PATCH' }, token)
 
-export const moveTaskToBacklog = (id: number) =>
-  apiFetch<{ ok: boolean }>(`/api/tasks/${id}/backlog`, { method: 'POST' })
+export const moveTaskToBacklog = (id: number, token?: string) =>
+  apiFetch<{ ok: boolean }>(`/api/tasks/${id}/backlog`, { method: 'POST' }, token)
 
-export const deleteTask = (id: number) =>
-  apiFetch<void>(`/api/tasks/${id}`, { method: 'DELETE' })
+export const deleteTask = (id: number, token?: string) =>
+  apiFetch<void>(`/api/tasks/${id}`, { method: 'DELETE' }, token)
 
-export const getTasksByRange = (from: string, to: string) =>
-  apiFetch<TaskDTO[]>(`/api/tasks/range?from=${from}&to=${to}`)
+export const getTasksByRange = (from: string, to: string, token?: string) =>
+  apiFetch<TaskDTO[]>(`/api/tasks/range?from=${from}&to=${to}`, undefined, token)
 
 export const updateTask = (id: number, data: {
   title?: string
@@ -52,11 +57,11 @@ export const updateTask = (id: number, data: {
   notes?: string | null
   clear_time?: boolean
   clear_notes?: boolean
-}) =>
+}, token?: string) =>
   apiFetch<TaskDTO>(`/api/tasks/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
-  })
+  }, token)
 
 // ── Backlog ────────────────────────────────────────────────────────────────
 
@@ -67,14 +72,14 @@ export interface BacklogItemDTO {
   notes: string | null
 }
 
-export const getBacklog = () =>
-  apiFetch<BacklogItemDTO[]>('/api/backlog/')
+export const getBacklog = (token?: string) =>
+  apiFetch<BacklogItemDTO[]>('/api/backlog/', undefined, token)
 
-export const moveBacklogToToday = (id: number) =>
-  apiFetch<TaskDTO>(`/api/backlog/${id}/today`, { method: 'POST' })
+export const moveBacklogToToday = (id: number, token?: string) =>
+  apiFetch<TaskDTO>(`/api/backlog/${id}/today`, { method: 'POST' }, token)
 
-export const deleteBacklogItem = (id: number) =>
-  apiFetch<void>(`/api/backlog/${id}`, { method: 'DELETE' })
+export const deleteBacklogItem = (id: number, token?: string) =>
+  apiFetch<void>(`/api/backlog/${id}`, { method: 'DELETE' }, token)
 
 // ── Focus ──────────────────────────────────────────────────────────────────
 
@@ -86,20 +91,20 @@ export interface FocusDTO {
   is_active: boolean
 }
 
-export const getFocus = () =>
-  apiFetch<{ week: FocusDTO | null; month: FocusDTO | null }>('/api/focus/')
+export const getFocus = (token?: string) =>
+  apiFetch<{ week: FocusDTO | null; month: FocusDTO | null }>('/api/focus/', undefined, token)
 
-export const setWeekFocus = (description: string) =>
+export const setWeekFocus = (description: string, token?: string) =>
   apiFetch<FocusDTO>('/api/focus/week', {
     method: 'PUT',
     body: JSON.stringify({ description }),
-  })
+  }, token)
 
-export const setMonthFocus = (description: string) =>
+export const setMonthFocus = (description: string, token?: string) =>
   apiFetch<FocusDTO>('/api/focus/month', {
     method: 'PUT',
     body: JSON.stringify({ description }),
-  })
+  }, token)
 
 // ── Workouts ───────────────────────────────────────────────────────────────
 
@@ -113,8 +118,8 @@ export interface WorkoutDTO {
   details: Record<string, unknown>
 }
 
-export const getWeekWorkouts = () =>
-  apiFetch<WorkoutDTO[]>('/api/workouts/week')
+export const getWeekWorkouts = (token?: string) =>
+  apiFetch<WorkoutDTO[]>('/api/workouts/week', undefined, token)
 
 // ── Settings ───────────────────────────────────────────────────────────────
 
@@ -126,26 +131,26 @@ export interface ScheduleDTO {
   time: string
 }
 
-export const getInterests = () =>
-  apiFetch<Record<string, boolean>>('/api/settings/interests')
+export const getInterests = (token?: string) =>
+  apiFetch<Record<string, boolean>>('/api/settings/interests', undefined, token)
 
-export const setInterests = (interests: Record<string, boolean>) =>
+export const setInterests = (interests: Record<string, boolean>, token?: string) =>
   apiFetch<Record<string, boolean>>('/api/settings/interests', {
     method: 'POST',
     body: JSON.stringify(interests),
-  })
+  }, token)
 
-export const getSchedules = () =>
-  apiFetch<ScheduleDTO[]>('/api/settings/schedules')
+export const getSchedules = (token?: string) =>
+  apiFetch<ScheduleDTO[]>('/api/settings/schedules', undefined, token)
 
-export const updateSchedule = (event_name: string, time: string, enabled: boolean) =>
+export const updateSchedule = (event_name: string, time: string, enabled: boolean, token?: string) =>
   apiFetch<ScheduleDTO>(`/api/settings/schedules/${event_name}`, {
     method: 'PATCH',
     body: JSON.stringify({ time, enabled }),
-  })
+  }, token)
 
-export const addInterest = (key: string) =>
-  apiFetch<Record<string, boolean>>(`/api/settings/interests/${key}`, { method: 'POST' })
+export const addInterest = (key: string, token?: string) =>
+  apiFetch<Record<string, boolean>>(`/api/settings/interests/${key}`, { method: 'POST' }, token)
 
-export const deleteInterest = (key: string) =>
-  apiFetch<void>(`/api/settings/interests/${key}`, { method: 'DELETE' })
+export const deleteInterest = (key: string, token?: string) =>
+  apiFetch<void>(`/api/settings/interests/${key}`, { method: 'DELETE' }, token)

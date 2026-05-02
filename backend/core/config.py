@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import AnyHttpUrl, Field, computed_field, SecretStr
+from pydantic import AnyHttpUrl, Field, SecretStr, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine.url import URL
 
@@ -75,6 +75,16 @@ class Settings(BaseSettings):
     # NewsAPI
     news_api_key: str = Field("", description="NewsAPI.org API key")
 
+    # Auth (JWT)
+    jwt_secret_key: SecretStr = Field(..., description="JWT signing secret")
+    jwt_algorithm: str = "HS256"
+    jwt_ttl_hours: int = 24
+
+    # Admin (создаётся data-миграцией)
+    admin_email: str = Field(..., description="Admin email — seeded by migration")
+    admin_password: SecretStr = Field(..., description="Admin password — seeded by migration")
+    admin_name: str = Field("Admin", description="Admin display name")
+
     # CORS
     allows_ips: list[AnyHttpUrl] = Field(default_factory=list, description="Your server/public IP for CORS allow_origins")
     container_frontend: str = Field("daios-frontend", description="Frontend container name for CORS")
@@ -95,6 +105,17 @@ class Settings(BaseSettings):
             password=self.postgres_password,
             host=self.db_host if self.docker else "localhost",
             port=self.db_port if self.docker else self.db_out_port,
+            database=self.postgres_db,
+        )
+    @computed_field
+    @property
+    def local_database_url(self) -> URL:
+        return URL.create(
+            drivername="postgresql",
+            username=self.postgres_user,
+            password=self.postgres_password,
+            host="localhost",
+            port=self.db_out_port,
             database=self.postgres_db,
         )
 

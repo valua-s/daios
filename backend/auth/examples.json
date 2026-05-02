@@ -1,0 +1,59 @@
+  POST /api/auth/login
+
+  Request:
+  { "email": "demo@daios.app", "password": "demo123" }
+  Response 200:
+  { "token": "abc123...", "user": { "id": 1, "email": "demo@daios.app", "name": "Demo User" } }
+  Response 401:
+  { "error": "Invalid email or password" }
+
+  ---
+  POST /api/auth/register
+
+  Request:
+  { "name": "John", "email": "john@example.com", "password": "secret123", "password_confirm": "secret123" }
+  Response 201:
+  { "token": "xyz789...", "user": { "id": 3, "email": "john@example.com", "name": "John" } }
+  Response 409:
+  { "error": "Email already registered" }
+  Response 400:
+  { "error": "Passwords do not match" }
+
+  ---
+  POST /api/auth/forgot
+
+  Request:
+  { "email": "demo@daios.app" }
+  Response 200:
+  { "ok": true, "message": "Recovery link sent" }
+  Response 404:
+  { "error": "Email not found" }
+
+  ---
+  POST /api/auth/change-password
+
+  Headers: Authorization: Bearer <token>
+  Request:
+  { "old_password": "demo123", "new_password": "newpass456", "new_password_confirm": "newpass456" }
+  Response 200:
+  { "ok": true, "message": "Password changed" }
+  Response 400:
+  { "error": "Passwords do not match" }
+  Response 401:
+  { "error": "Old password is incorrect" }
+
+  ---
+  POST /api/auth/logout
+
+  Headers: Authorization: Bearer <token>
+  Response 200:
+  { "ok": true }
+
+  ---
+  User object shape
+
+  {
+    "id": 1,
+    "email": "demo@daios.app",
+    "name": "Demo User"
+  }

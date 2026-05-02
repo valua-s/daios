@@ -5,7 +5,7 @@ from typing import Any
 
 from backend.agents.base import BaseAgent
 from backend.models.content import ContentItem
-from backend.services.content_service import ALL_TOPICS, ContentService
+from backend.services.content_service import ContentService
 from backend.services.focus_resolver import FocusResolver
 from backend.services.llm_service import ContentCandidate, LLMService
 
