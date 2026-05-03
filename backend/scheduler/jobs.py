@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dishka import AsyncContainer
 
 from backend.agents.orchestrator import Orchestrator
+from backend.integrations.telegram import TelegramNotifier
 from backend.services.content_service import ContentService
 from backend.services.focus_resolver import FocusResolver
 from backend.services.llm_service import LLMService
@@ -91,5 +92,22 @@ def make_evening_brief(container: AsyncContainer) -> Callable:
         async with container() as request_container:
             orchestrator = await request_container.get(Orchestrator)
             await orchestrator.run_evening_brief(state={})
+
+    return job
+
+
+def make_tasks_reminder(container: AsyncContainer) -> Callable:
+    async def job() -> None:
+        logger.info("Running tasks_reminder")
+        async with container() as request_container:
+            task_service = await request_container.get(TaskService)
+            notifier = await request_container.get(TelegramNotifier)
+            tasks = await task_service.get_today_tasks()
+            if tasks:
+                logger.info("tasks_reminder skipped: %d tasks already exist", len(tasks))
+                return
+            await notifier.send(
+                "📝 На сегодня ещё нет задач — самое время запланировать день"
+            )
 
     return job

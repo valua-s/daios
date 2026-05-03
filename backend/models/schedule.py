@@ -16,5 +16,7 @@ class Schedule(Base):
     # Например: "morning_brief", "evening_summary", "content_fetch"
     cron_expr: Mapped[str] = mapped_column(Text, nullable=False)
     # Стандартный cron: "30 6 * * *" = 06:30 каждый день
+    cron_expr_weekend: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Если задано — cron_expr применяется только к будням, cron_expr_weekend — к выходным
     enabled: Mapped[bool] = mapped_column(default=True)
     description: Mapped[str | None] = mapped_column(Text)

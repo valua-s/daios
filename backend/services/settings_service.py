@@ -30,7 +30,11 @@ DEFAULT_SCHEDULES: list[dict] = [
     {"event_name": "sync_workouts", "cron_expr": "0 6,17 * * *", "enabled": True, "description": "Синхронизация тренировок"},
     {"event_name": "evening_brief", "cron_expr": "30 16 * * *", "enabled": True, "description": "Вечерняя сводка"},
     {"event_name": "midnight_backlog", "cron_expr": "0 0 * * *", "enabled": True, "description": "Перенос невыполненных в бэклог"},
+    {"event_name": "tasks_reminder", "cron_expr": "0 9 * * *", "enabled": True, "description": "Напоминание добавить задачи"},
 ]
+
+# События, поддерживающие отдельное расписание для выходных
+SPLIT_EVENTS: frozenset[str] = frozenset({"morning_brief", "evening_brief"})
 
 
 @dataclass
@@ -40,6 +44,9 @@ class ScheduleDTO:
     enabled: bool
     description: str
     time: str  # HH:MM, только для простых ежедневных cron (одно время)
+    cron_expr_weekend: str | None
+    time_weekend: str | None
+    supports_weekend: bool
 
 
 SCHEDULE_RELOAD_CHANNEL = "schedule:reload"
@@ -104,28 +111,43 @@ class SettingsService:
         db_schedules = {s.event_name: s for s in await self._schedules.get_all()}
         result = []
         for default in DEFAULT_SCHEDULES:
-            s = db_schedules.get(default["event_name"])
+            event_name = default["event_name"]
+            s = db_schedules.get(event_name)
             cron = s.cron_expr if s else default["cron_expr"]
+            cron_we = s.cron_expr_weekend if s else None
             enabled = s.enabled if s else default["enabled"]
             result.append(ScheduleDTO(
-                event_name=default["event_name"],
+                event_name=event_name,
                 cron_expr=cron,
                 enabled=enabled,
                 description=default["description"],
                 time=_cron_to_time(cron),
+                cron_expr_weekend=cron_we,
+                time_weekend=_cron_to_time(cron_we) if cron_we else None,
+                supports_weekend=event_name in SPLIT_EVENTS,
             ))
         return result
 
-    async def update_schedule(self, event_name: str, time: str, enabled: bool) -> ScheduleDTO | None:
+    async def update_schedule(
+        self,
+        event_name: str,
+        time: str,
+        enabled: bool,
+        time_weekend: str | None = None,
+    ) -> ScheduleDTO | None:
         default = next((d for d in DEFAULT_SCHEDULES if d["event_name"] == event_name), None)
         if default is None:
             return None
         cron = _time_to_cron(time)
+        cron_we: str | None = None
+        if event_name in SPLIT_EVENTS and time_weekend:
+            cron_we = _time_to_cron(time_weekend)
         schedule = await self._schedules.upsert(
             event_name=event_name,
             cron_expr=cron,
             enabled=enabled,
             description=default["description"],
+            cron_expr_weekend=cron_we,
         )
 
         # Сигнал scheduler'у перечитать расписания
@@ -140,6 +162,9 @@ class SettingsService:
             enabled=schedule.enabled,
             description=schedule.description or default["description"],
             time=_cron_to_time(schedule.cron_expr),
+            cron_expr_weekend=schedule.cron_expr_weekend,
+            time_weekend=_cron_to_time(schedule.cron_expr_weekend) if schedule.cron_expr_weekend else None,
+            supports_weekend=event_name in SPLIT_EVENTS,
         )
 
 

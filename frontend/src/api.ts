@@ -129,6 +129,9 @@ export interface ScheduleDTO {
   enabled: boolean
   description: string
   time: string
+  cron_expr_weekend: string | null
+  time_weekend: string | null
+  supports_weekend: boolean
 }
 
 export const getInterests = (token?: string) =>
@@ -143,10 +146,16 @@ export const setInterests = (interests: Record<string, boolean>, token?: string)
 export const getSchedules = (token?: string) =>
   apiFetch<ScheduleDTO[]>('/api/settings/schedules', undefined, token)
 
-export const updateSchedule = (event_name: string, time: string, enabled: boolean, token?: string) =>
+export const updateSchedule = (
+  event_name: string,
+  time: string,
+  enabled: boolean,
+  token?: string,
+  time_weekend?: string | null,
+) =>
   apiFetch<ScheduleDTO>(`/api/settings/schedules/${event_name}`, {
     method: 'PATCH',
-    body: JSON.stringify({ time, enabled }),
+    body: JSON.stringify({ time, enabled, time_weekend: time_weekend ?? null }),
   }, token)
 
 export const addInterest = (key: string, token?: string) =>

@@ -19,6 +19,7 @@ from backend.scheduler.jobs import (
     make_midnight_backlog,
     make_morning_brief,
     make_sync_workouts,
+    make_tasks_reminder,
 )
 from backend.services.settings_service import (
     SCHEDULE_RELOAD_CHANNEL,
@@ -35,14 +36,16 @@ JOB_FACTORIES: dict[str, Callable[[AsyncContainer], Callable]] = {
     "sync_workouts": make_sync_workouts,
     "evening_brief": make_evening_brief,
     "midnight_backlog": make_midnight_backlog,
+    "tasks_reminder": make_tasks_reminder,
 }
 
 
-def _parse_cron(cron_expr: str) -> list[CronTrigger]:
+def _parse_cron(cron_expr: str, dow_override: str | None = None) -> list[CronTrigger]:
     """Парсит cron выражение в список триггеров.
 
     Поддерживает мульти-значения (напр. '0 6,17 * * *' → 2 триггера)
-    и day-of-week (напр. '30 6 * * 1-5').
+    и day-of-week (напр. '30 6 * * 1-5'). Если задан `dow_override` —
+    перекрывает dow из выражения (используется для weekday/weekend сплита).
     """
     parts = cron_expr.split()
     if len(parts) < 5:
@@ -53,8 +56,9 @@ def _parse_cron(cron_expr: str) -> list[CronTrigger]:
         kwargs["day"] = dom
     if month != "*":
         kwargs["month"] = month
-    if dow != "*":
-        kwargs["day_of_week"] = dow
+    effective_dow = dow_override if dow_override is not None else (dow if dow != "*" else None)
+    if effective_dow is not None:
+        kwargs["day_of_week"] = effective_dow
     return [
         CronTrigger(
             hour=int(hour),
@@ -74,6 +78,7 @@ async def load_schedules_from_db(container: AsyncContainer) -> list[dict]:
             {
                 "event_name": s.event_name,
                 "cron_expr": s.cron_expr,
+                "cron_expr_weekend": s.cron_expr_weekend,
                 "enabled": s.enabled,
             }
             for s in await svc.get_schedules()
@@ -100,16 +105,26 @@ def apply_schedules(
             continue
 
         job_func = factory(container)
-        triggers = _parse_cron(s["cron_expr"])
+        cron_we = s.get("cron_expr_weekend")
+        if cron_we:
+            # Сплит: будни → cron_expr, выходные → cron_expr_weekend
+            groups = [
+                ("wd", _parse_cron(s["cron_expr"], dow_override="mon-fri")),
+                ("we", _parse_cron(cron_we, dow_override="sat,sun")),
+            ]
+        else:
+            groups = [("", _parse_cron(s["cron_expr"]))]
 
-        for i, trigger in enumerate(triggers):
-            job_id = s["event_name"] if len(triggers) == 1 else f"{s['event_name']}_{i:02d}"
-            scheduler.add_job(
-                job_func,
-                trigger=trigger,
-                id=job_id,
-                replace_existing=True,
-            )
+        for suffix, triggers in groups:
+            for i, trigger in enumerate(triggers):
+                base = s["event_name"] if not suffix else f"{s['event_name']}_{suffix}"
+                job_id = base if len(triggers) == 1 else f"{base}_{i:02d}"
+                scheduler.add_job(
+                    job_func,
+                    trigger=trigger,
+                    id=job_id,
+                    replace_existing=True,
+                )
 
     logger.info("Schedules applied. Jobs: %s", [j.id for j in scheduler.get_jobs()])
 
