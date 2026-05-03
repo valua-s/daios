@@ -8,12 +8,12 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.agents.content_agent import ContentAgent
-from backend.auth.service.auth_service import AuthService
 from backend.agents.context_agent import ContextAgent
 from backend.agents.evening_agent import EveningAgent
 from backend.agents.orchestrator import Orchestrator
 from backend.agents.task_agent import TaskAgent
 from backend.agents.workout_agent import WorkoutAgent
+from backend.auth.service.auth_service import AuthService
 from backend.core.config import Settings, settings
 from backend.core.db import AsyncSessionFactory
 from backend.core.redis import create_redis
@@ -27,11 +27,13 @@ from backend.integrations.weather import WeatherClient
 from backend.integrations.youtube import YouTubeClient
 from backend.repositories.backlog_repo import BacklogRepository
 from backend.repositories.focus_repo import FocusRepository
+from backend.repositories.note_repo import NoteItemRepository, NoteRepository
 from backend.repositories.task_repo import TaskRepository
 from backend.services.content_service import ContentService
 from backend.services.focus_resolver import FocusResolver
 from backend.services.focus_service import FocusService
 from backend.services.llm_service import LLMService
+from backend.services.note_service import NoteService
 from backend.services.settings_service import SettingsService
 from backend.services.task_service import TaskService
 from backend.services.workout_service import WorkoutService
@@ -118,6 +120,18 @@ class AppProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def get_focus_repo(self, session: AsyncSession) -> FocusRepository:
         return FocusRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_note_repo(self, session: AsyncSession) -> NoteRepository:
+        return NoteRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_note_item_repo(self, session: AsyncSession) -> NoteItemRepository:
+        return NoteItemRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_note_service(self, session: AsyncSession) -> NoteService:
+        return NoteService(session)
 
     @provide(scope=Scope.REQUEST)
     def get_focus_service(self, session: AsyncSession) -> FocusService:

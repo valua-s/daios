@@ -52,6 +52,27 @@
 - Кнопка "Сохранить" делает PATCH через клиентский JS
 - Добавлен API-прокси `/api/*` в index.ts для клиентских запросов
 
+### 11. ✅ Заметки (Notes) — фича целиком
+- **Backend** (uncommitted на ветке feat--auth):
+  - `models/note.py` — `Note` (id, title, body, items[]) + `NoteItem` (id, note_id, text, checked, sort_order). Cascade `all, delete-orphan`, items упорядочены по `sort_order`. `created_at/updated_at` через Base
+  - `migrations/versions/4_notes.py` — таблицы `notes` + `note_items`, FK CASCADE, index по `note_id`. Down-revision: `3`
+  - `repositories/note_repo.py` — `NoteRepository.get_all_ordered/get_with_items` (selectinload items), `NoteItemRepository.get_max_sort_order`
+  - `services/note_service.py` — CRUD заметок, `add_item` с автоинкрементом sort_order, `update_item`, `toggle_item`, `delete_item`. `update_note` поддерживает `clear_body`
+  - `api/notes.py` — `NotesController(path="/api/notes")`: GET `/`, POST `/`, GET/PATCH/DELETE `/{id}`, POST `/{id}/items`, PATCH/DELETE `/items/{id}`, POST `/items/{id}/toggle`
+  - `api/schemas.py` — `NoteDTO`, `NoteItemDTO`, `CreateNoteRequest`, `UpdateNoteRequest` (Pydantic, `clear_body`), `CreateNoteItemRequest`, `UpdateNoteItemRequest` (Pydantic)
+  - `core/providers.py` — DI: `NoteRepository`, `NoteItemRepository`, `NoteService` (REQUEST scope)
+  - `__main__.py` — `NotesController` в `protected_router` (за `jwt_auth_guard`)
+  - `models/__init__.py` — экспорт `Note`, `NoteItem`
+- **Frontend** (uncommitted):
+  - `routes/notes.ts` (NEW) — страница `/notes`. Сетка карточек (auto-fill min 280px) с превью: title, бейдж `checked/total`, кусок body (до 140 симв), первые 4 пункта (☐/☑) + «+ ещё N»
+  - **Модал создания**: title*, body, секция «Чек-лист» с input «Пункт + Enter» — пункты копятся в JS-массиве `draftItems`, при сохранении создаётся note → последовательно POST'ятся items
+  - **Детальный модал** (по клику на карточку): просмотр + кнопка «✎ Изменить» (inline-форма title/body с `clear_body`), чек-лист с чекбоксом-toggle, edit текста по blur, удаление крестиком, добавление новых пунктов через input + Enter / «+». Кнопка «✕ Удалить заметку» с `confirm()`. Esc закрывает модалы
+  - Все клиентские fetch идут через `/api/*` прокси из `index.ts` (Bearer из cookie подставляется автоматически)
+  - `api.ts` — `getNotes/getNote/createNote/updateNote/deleteNote/addNoteItem/updateNoteItem/toggleNoteItem/deleteNoteItem` + интерфейсы `NoteDTO/NoteItemDTO`
+  - `layouts/base.ts` — пункт «📝 Заметки» в навигации
+  - `index.ts` — импорт и `app.route('/notes', notesRouter)`
+- ⚠️ **Перед использованием**: `alembic upgrade head` (применить миграцию `4_notes`)
+
 ### 10. ✅ Fix: notes не сохранялись при создании задачи
 - `POST /api/tasks/` не передавал `notes` в `TaskService.create_task()`
 - Добавлен параметр `notes` в `TaskService.create_task()` и передача в `_tasks.create()`
