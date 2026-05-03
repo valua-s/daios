@@ -6,6 +6,7 @@ import { workoutsRouter } from './routes/workouts'
 import { focusRouter } from './routes/focus'
 import { settingsRouter } from './routes/settings'
 import { calendarRouter } from './routes/calendar'
+import { notesRouter } from './routes/notes'
 import { authRouter } from './routes/auth'
 import { isJwtValid } from './auth/api-auth'
 import { API_URL } from './config'
@@ -71,6 +72,7 @@ app.route('/calendar', calendarRouter)
 app.route('/backlog', backlogRouter)
 app.route('/workouts', workoutsRouter)
 app.route('/focus', focusRouter)
+app.route('/notes', notesRouter)
 app.route('/settings', settingsRouter)
 
 const PORT = parseInt(process.env.PORT ?? '3000')

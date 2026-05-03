@@ -154,3 +154,63 @@ export const addInterest = (key: string, token?: string) =>
 
 export const deleteInterest = (key: string, token?: string) =>
   apiFetch<void>(`/api/settings/interests/${key}`, { method: 'DELETE' }, token)
+
+// ── Notes ──────────────────────────────────────────────────────────────────
+
+export interface NoteItemDTO {
+  id: number
+  note_id: number
+  text: string
+  checked: boolean
+  sort_order: number
+}
+
+export interface NoteDTO {
+  id: number
+  title: string
+  body: string | null
+  items: NoteItemDTO[]
+}
+
+export const getNotes = (token?: string) =>
+  apiFetch<NoteDTO[]>('/api/notes/', undefined, token)
+
+export const getNote = (id: number, token?: string) =>
+  apiFetch<NoteDTO>(`/api/notes/${id}`, undefined, token)
+
+export const createNote = (title: string, body: string | null, token?: string) =>
+  apiFetch<NoteDTO>('/api/notes/', {
+    method: 'POST',
+    body: JSON.stringify({ title, body }),
+  }, token)
+
+export const updateNote = (id: number, data: {
+  title?: string
+  body?: string | null
+  clear_body?: boolean
+}, token?: string) =>
+  apiFetch<NoteDTO>(`/api/notes/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }, token)
+
+export const deleteNote = (id: number, token?: string) =>
+  apiFetch<void>(`/api/notes/${id}`, { method: 'DELETE' }, token)
+
+export const addNoteItem = (noteId: number, text: string, token?: string) =>
+  apiFetch<NoteItemDTO>(`/api/notes/${noteId}/items`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  }, token)
+
+export const updateNoteItem = (id: number, data: { text?: string; checked?: boolean }, token?: string) =>
+  apiFetch<NoteItemDTO>(`/api/notes/items/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }, token)
+
+export const toggleNoteItem = (id: number, token?: string) =>
+  apiFetch<NoteItemDTO>(`/api/notes/items/${id}/toggle`, { method: 'POST' }, token)
+
+export const deleteNoteItem = (id: number, token?: string) =>
+  apiFetch<void>(`/api/notes/items/${id}`, { method: 'DELETE' }, token)

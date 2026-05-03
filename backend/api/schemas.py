@@ -65,3 +65,44 @@ class FocusDTO:
 @dataclass
 class SetFocusRequest:
     description: str
+
+
+@dataclass
+class NoteItemDTO:
+    id: int
+    note_id: int
+    text: str
+    checked: bool
+    sort_order: int
+
+
+@dataclass
+class NoteDTO:
+    id: int
+    title: str
+    body: str | None
+    items: list[NoteItemDTO]
+
+
+@dataclass
+class CreateNoteRequest:
+    title: str
+    body: str | None = None
+
+
+class UpdateNoteRequest(BaseModel):
+    model_config = {"from_attributes": True}
+    title: str | None = None
+    body: str | None = None
+    clear_body: bool = False
+
+
+@dataclass
+class CreateNoteItemRequest:
+    text: str
+
+
+class UpdateNoteItemRequest(BaseModel):
+    model_config = {"from_attributes": True}
+    text: str | None = None
+    checked: bool | None = None

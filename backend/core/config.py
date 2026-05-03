@@ -107,6 +107,7 @@ class Settings(BaseSettings):
             port=self.db_port if self.docker else self.db_out_port,
             database=self.postgres_db,
         )
+
     @computed_field
     @property
     def local_database_url(self) -> URL:

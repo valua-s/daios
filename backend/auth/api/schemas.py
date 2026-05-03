@@ -1,5 +1,8 @@
-from pydantic import BaseModel, EmailStr, model_validator
+from __future__ import annotations
+
 from typing import Self
+
+from pydantic import BaseModel, EmailStr, model_validator
 
 
 class LoginRequest(BaseModel):
