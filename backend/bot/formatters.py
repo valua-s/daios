@@ -64,10 +64,12 @@ def format_content_items(items: list[ContentItem]) -> str:
 def format_morning_brief(
     today: date,
     tasks: list[Task],
+    workout: WorkoutPlan | None,
     weather: WeatherData | None = None,
     bus_schedule: list[BusArrival] | None = None,
-    is_weekend: bool = False,
     content_items: list[ContentItem] | None = None,
+    *,
+    is_weekend: bool = False,
 ) -> str:
     lines = [f"🌅 <b>Доброе утро! {today.strftime('%d.%m.%Y')}</b>\n"]
 
@@ -77,12 +79,15 @@ def format_morning_brief(
             f"{weather.description}, ветер {weather.wind_speed} м/с\n"
         )
 
-    if not is_weekend and bus_schedule:
-        lines.append("🚌 <b>Ближайшие автобусы:</b>")
-        for bus in bus_schedule:
-            t = bus.departure_time.strftime("%H:%M")
-            lines.append(f"  {t} (через {bus.minutes_until} мин) — №{bus.bus_numbers}")
-        lines.append("")
+    if not is_weekend:
+        if bus_schedule:
+            lines.append("🚌 <b>Ближайшие автобусы:</b>")
+            for bus in bus_schedule:
+                t = bus.departure_time.strftime("%H:%M")
+                lines.append(f"  {t} (через {bus.minutes_until} мин) — №{bus.bus_numbers}")
+            lines.append("")
+    else:
+        lines.append(format_workout(workout) + "\n")
 
     if tasks:
         lines.append(f"📋 <b>Задачи на сегодня ({len(tasks)}):</b>")
@@ -93,8 +98,7 @@ def format_morning_brief(
         lines.append("📋 Задач пока нет — добавь через /addtask")
 
     if content_items:
-        lines.append("")
-        lines.append(format_content_items(content_items))
+        lines.extend(["", format_content_items(content_items)])
 
     return "\n".join(lines)
 
@@ -104,19 +108,20 @@ def format_evening_brief(
     workout: WorkoutPlan | None,
     tasks: list[Task],
     bus_schedule: list[BusArrival] | None = None,
-    is_weekend: bool = False,
     content_items: list[ContentItem] | None = None,
+    *,
+    is_weekend: bool = False,
 ) -> str:
     lines = [f"🌇 <b>Добрый вечер! {today.strftime('%d.%m.%Y')}</b>\n"]
 
-    if not is_weekend and bus_schedule:
-        lines.append("🚌 <b>Ближайшие автобусы:</b>")
-        for bus in bus_schedule:
-            t = bus.departure_time.strftime("%H:%M")
-            lines.append(f"  {t} (через {bus.minutes_until} мин) — №{bus.bus_numbers}")
-        lines.append("")
-
-    lines.append(format_workout(workout) + "\n")
+    if not is_weekend:
+        if bus_schedule:
+            lines.append("🚌 <b>Ближайшие автобусы:</b>")
+            for bus in bus_schedule:
+                t = bus.departure_time.strftime("%H:%M")
+                lines.append(f"  {t} (через {bus.minutes_until} мин) — №{bus.bus_numbers}")
+            lines.append("")
+        lines.append(format_workout(workout) + "\n")
 
     if tasks:
         lines.append(f"📋 <b>Задачи на сегодня ({len(tasks)}):</b>")
@@ -127,8 +132,7 @@ def format_evening_brief(
         lines.append("📋 Задач пока нет — добавь через /addtask")
 
     if content_items:
-        lines.append("")
-        lines.append(format_content_items(content_items))
+        lines.extend(["", format_content_items(content_items)])
 
     return "\n".join(lines)
 

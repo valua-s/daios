@@ -42,16 +42,25 @@ class ScheduleRepository:
         )
         return result.scalars().first()
 
-    async def upsert(self, event_name: str, cron_expr: str, enabled: bool, description: str) -> Schedule:
+    async def upsert(
+        self,
+        event_name: str,
+        cron_expr: str,
+        enabled: bool,
+        description: str,
+        cron_expr_weekend: str | None = None,
+    ) -> Schedule:
         existing = await self.get(event_name)
         if existing:
             existing.cron_expr = cron_expr
+            existing.cron_expr_weekend = cron_expr_weekend
             existing.enabled = enabled
             existing.description = description
             return existing
         schedule = Schedule(
             event_name=event_name,
             cron_expr=cron_expr,
+            cron_expr_weekend=cron_expr_weekend,
             enabled=enabled,
             description=description,
         )

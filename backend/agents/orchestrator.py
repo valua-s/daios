@@ -102,6 +102,7 @@ class Orchestrator(BaseAgent):
         all_items = state.get("content_items", [])
         return format_morning_brief(
             today=datetime.now(ZoneInfo(settings.app_timezone)).date(),
+            workout=state.get("workout"),
             tasks=state.get("tasks", []),
             weather=state.get("weather"),
             bus_schedule=state.get("bus_schedule", []),

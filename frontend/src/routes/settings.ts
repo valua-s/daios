@@ -37,9 +37,12 @@ settingsRouter.post('/schedules/:event_name', async (c) => {
   const token = getCookie(c, 'daios_session')
   const event_name = c.req.param('event_name')
   const body = await c.req.parseBody()
-  const time = String(body.time ?? '06:00')
+  const time = String(body.time ?? '').trim()
+  if (!time) return c.redirect('/settings')
   const enabled = body.enabled === 'on'
-  await updateSchedule(event_name, time, enabled, token)
+  const time_weekend_raw = String(body.time_weekend ?? '').trim()
+  const time_weekend = time_weekend_raw || null
+  await updateSchedule(event_name, time, enabled, token, time_weekend)
   return c.redirect('/settings')
 })
 
@@ -93,6 +96,9 @@ settingsRouter.get('/', async (c) => {
     evening_summary: 'Вечерний итог',
     collect_content: 'Сбор контента',
     sync_workouts: 'Синхронизация тренировок',
+    evening_brief: 'Вечерняя сводка',
+    midnight_backlog: 'Перенос в бэклог',
+    tasks_reminder: 'Напоминание о задачах',
   }
 
   const interestsForm = `
@@ -121,17 +127,31 @@ settingsRouter.get('/', async (c) => {
     </form>
   `
 
-  const scheduleRow = (s: typeof schedules[0]) => `
+  const timeInput = (name: string, value: string, label: string) => `
+    <label style="display:flex; flex-direction:column; gap:2px; font-size:11px; color:#666;">
+      ${label}
+      <input type="time" name="${name}" value="${value}" style="
+        background:#111; border:1px solid #2a2a2a; border-radius:6px;
+        color:#e8e8e8; font-size:14px; padding:6px 10px; outline:none;
+      " />
+    </label>
+  `
+
+  const scheduleRow = (s: typeof schedules[0]) => {
+    const cronLine = s.cron_expr_weekend
+      ? `${s.cron_expr} (будни) · ${s.cron_expr_weekend} (выходные)`
+      : s.cron_expr
+    const inputs = s.supports_weekend
+      ? `${timeInput('time', s.time, 'Будни')}${timeInput('time_weekend', s.time_weekend ?? '', 'Выходные')}`
+      : timeInput('time', s.time, 'Время')
+    return `
     <form method="POST" action="/settings/schedules/${s.event_name}"
           style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #1e1e1e; flex-wrap:wrap;">
       <div style="flex:1; min-width:160px;">
         <div style="font-size:14px; color:#e8e8e8;">${SCHEDULE_LABELS[s.event_name] ?? s.event_name}</div>
-        <div style="font-size:11px; color:#555; margin-top:2px;">${s.cron_expr}</div>
+        <div style="font-size:11px; color:#555; margin-top:2px;">${cronLine}</div>
       </div>
-      <input type="time" name="time" value="${s.time}" style="
-        background:#111; border:1px solid #2a2a2a; border-radius:6px;
-        color:#e8e8e8; font-size:14px; padding:6px 10px; outline:none;
-      " />
+      ${inputs}
       <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#888; cursor:pointer;">
         <input type="checkbox" name="enabled" ${s.enabled ? 'checked' : ''} style="accent-color:#7c6aff;" />
         Вкл
@@ -142,6 +162,7 @@ settingsRouter.get('/', async (c) => {
       ">Сохранить</button>
     </form>
   `
+  }
 
   const content = `
     <div style="margin-bottom:28px;">

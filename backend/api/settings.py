@@ -19,12 +19,16 @@ class ScheduleResponseDTO:
     enabled: bool
     description: str
     time: str
+    cron_expr_weekend: str | None
+    time_weekend: str | None
+    supports_weekend: bool
 
 
 @dataclass
 class UpdateScheduleRequest:
     time: str
     enabled: bool
+    time_weekend: str | None = None
 
 
 def _to_response(dto: ScheduleDTO) -> ScheduleResponseDTO:
@@ -34,6 +38,9 @@ def _to_response(dto: ScheduleDTO) -> ScheduleResponseDTO:
         enabled=dto.enabled,
         description=dto.description,
         time=dto.time,
+        cron_expr_weekend=dto.cron_expr_weekend,
+        time_weekend=dto.time_weekend,
+        supports_weekend=dto.supports_weekend,
     )
 
 
@@ -90,7 +97,12 @@ class SettingsController(Controller):
         data: UpdateScheduleRequest,
         settings_service: FromDishka[SettingsService],
     ) -> ScheduleResponseDTO:
-        result = await settings_service.update_schedule(event_name, data.time, data.enabled)
+        try:
+            result = await settings_service.update_schedule(
+                event_name, data.time, data.enabled, data.time_weekend
+            )
+        except ValueError as e:
+            raise ClientException(detail=str(e))
         if result is None:
             raise NotFoundException(detail=f"Schedule '{event_name}' not found")
         return _to_response(result)
