@@ -14,6 +14,7 @@ from backend.api.focus import FocusController
 from backend.api.notes import NotesController
 from backend.api.settings import SettingsController
 from backend.api.tasks import TaskController
+from backend.api.webhooks import StravaWebhookController
 from backend.api.workouts import WorkoutController
 from backend.auth.api.auth import AuthController
 from backend.auth.guards import jwt_auth_guard
@@ -39,8 +40,12 @@ async def _main() -> None:
         path="",
         route_handlers=[AuthController],
     )
+    public_router = DishkaRouter(
+        path="",
+        route_handlers=[StravaWebhookController],
+    )
     app = Litestar(
-        route_handlers=[health_check, auth_router, protected_router],
+        route_handlers=[health_check, auth_router, public_router, protected_router],
         cors_config=CORSConfig(
             allow_origins=settings.allow_origins,
         ),
