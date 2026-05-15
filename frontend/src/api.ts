@@ -115,11 +115,34 @@ export interface WorkoutDTO {
   description: string
   duration_minutes: number
   is_today: boolean
+  is_completed: boolean
+  actual_distance_km: number | null
+  actual_duration_minutes: number | null
+  completed_workout_id: number | null
   details: Record<string, unknown>
+}
+
+export interface WeekSummaryDTO {
+  planned_km: number
+  actual_km: number
+  percent: number
 }
 
 export const getWeekWorkouts = (token?: string) =>
   apiFetch<WorkoutDTO[]>('/api/workouts/week', undefined, token)
+
+export const getWeekSummary = (token?: string) =>
+  apiFetch<WeekSummaryDTO>('/api/workouts/week/summary', undefined, token)
+
+export const updateCompletedDistance = (
+  completedId: number,
+  distance_km: number | null,
+  token?: string,
+) =>
+  apiFetch<{ status: string }>(`/api/workouts/completed/${completedId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ distance_km }),
+  }, token)
 
 // ── Settings ───────────────────────────────────────────────────────────────
 

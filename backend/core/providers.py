@@ -21,11 +21,13 @@ from backend.integrations.bus_schedule import BusScheduleParser
 from backend.integrations.google_sheets import GoogleSheetsClient
 from backend.integrations.news import NewsClient
 from backend.integrations.rss import RSSParser
+from backend.integrations.strava import StravaClient
 from backend.integrations.telegram import TelegramNotifier
 from backend.integrations.vk import VKClient
 from backend.integrations.weather import WeatherClient
 from backend.integrations.youtube import YouTubeClient
 from backend.repositories.backlog_repo import BacklogRepository
+from backend.repositories.completed_workout_repo import CompletedWorkoutRepository
 from backend.repositories.focus_repo import FocusRepository
 from backend.repositories.note_repo import NoteItemRepository, NoteRepository
 from backend.repositories.task_repo import TaskRepository
@@ -35,6 +37,7 @@ from backend.services.focus_service import FocusService
 from backend.services.llm_service import LLMService
 from backend.services.note_service import NoteService
 from backend.services.settings_service import SettingsService
+from backend.services.strava_service import StravaService
 from backend.services.task_service import TaskService
 from backend.services.workout_service import WorkoutService
 
@@ -64,6 +67,10 @@ class AppProvider(Provider):
     @provide(scope=Scope.APP)
     def get_weather_client(self, http_client: httpx.AsyncClient) -> WeatherClient:
         return WeatherClient(http_client)
+
+    @provide(scope=Scope.APP)
+    def get_strava_client(self, http_client: httpx.AsyncClient, redis: Redis) -> StravaClient:
+        return StravaClient(http_client, redis)
 
     @provide(scope=Scope.APP)
     def get_bus_parser(self, http_client: httpx.AsyncClient) -> BusScheduleParser:
@@ -152,6 +159,19 @@ class AppProvider(Provider):
         sheets_client: GoogleSheetsClient,
     ) -> WorkoutService:
         return WorkoutService(session, sheets_client)
+
+    @provide(scope=Scope.REQUEST)
+    def get_completed_workout_repo(self, session: AsyncSession) -> CompletedWorkoutRepository:
+        return CompletedWorkoutRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_strava_service(
+        self,
+        session: AsyncSession,
+        repo: CompletedWorkoutRepository,
+        strava_client: StravaClient,
+    ) -> StravaService:
+        return StravaService(session, repo, strava_client)
 
     @provide(scope=Scope.REQUEST)
     def get_context_agent(
