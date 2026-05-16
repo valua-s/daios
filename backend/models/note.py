@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Text
+from sqlalchemy import Boolean, ForeignKey, Integer, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.models.base import Base
@@ -17,6 +17,8 @@ class Note(Base):
         back_populates="note",
         cascade="all, delete-orphan",
         order_by="NoteItem.sort_order",
+        lazy="selectin",
+        passive_deletes=True,
     )
 
 
@@ -32,3 +34,7 @@ class NoteItem(Base):
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     note: Mapped[Note] = relationship(back_populates="items")
+
+    __table_args__ = (
+        UniqueConstraint("note_id", "sort_order", name="uq_note_items_note_id_sort_order"),
+    )

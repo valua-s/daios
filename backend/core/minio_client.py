@@ -20,5 +20,5 @@ minio_client = Minio(
 def ensure_bucket(bucket: str = settings.minio_bucket_media) -> None:
     """Создать бакет если не существует. Вызывается при старте приложения."""
     if not minio_client.bucket_exists(bucket):
-        # minio_client.make_bucket(bucket)
-        logger.error("Bucket not exists")
+        minio_client.make_bucket(bucket)
+        logger.info("Created Minio bucket: %s", bucket)

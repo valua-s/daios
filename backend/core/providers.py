@@ -14,7 +14,7 @@ from backend.agents.orchestrator import Orchestrator
 from backend.agents.task_agent import TaskAgent
 from backend.agents.workout_agent import WorkoutAgent
 from backend.auth.service.auth_service import AuthService
-from backend.core.config import Settings, settings
+from backend.core.config import Settings, get_settings
 from backend.core.db import AsyncSessionFactory
 from backend.core.redis import create_redis
 from backend.integrations.bus_schedule import BusScheduleParser
@@ -45,11 +45,15 @@ from backend.services.workout_service import WorkoutService
 class AppProvider(Provider):
     @provide(scope=Scope.APP)
     def get_settings(self) -> Settings:
-        return settings
+        return get_settings()
 
     @provide(scope=Scope.APP)
-    def get_redis(self) -> Redis:
-        return create_redis()
+    async def get_redis(self) -> AsyncIterator[Redis]:
+        client = create_redis()
+        try:
+            yield client
+        finally:
+            await client.aclose()
 
     @provide(scope=Scope.APP)
     async def get_http_client(self) -> AsyncIterator[httpx.AsyncClient]:

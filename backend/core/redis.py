@@ -14,4 +14,8 @@ def create_redis() -> Redis:
         username=settings.redis_user,
         password=settings.redis_password,
         decode_responses=True,
+        socket_timeout=5.0,
+        socket_connect_timeout=5.0,
+        socket_keepalive=True,
+        health_check_interval=30,
     )

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.models.schedule import ALLOWED_EVENT_NAMES
 from backend.repositories.settings_repo import (
     ScheduleRepository,
     UserSettingRepository,
@@ -135,6 +136,8 @@ class SettingsService:
         enabled: bool,
         time_weekend: str | None = None,
     ) -> ScheduleDTO | None:
+        if event_name not in ALLOWED_EVENT_NAMES:
+            raise ValueError(f"Unknown event_name: {event_name!r}")
         default = next((d for d in DEFAULT_SCHEDULES if d["event_name"] == event_name), None)
         if default is None:
             return None
