@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class StravaWebhookController(Controller):
-    path = "/webhook"
+    path = "/api/webhooks/strava"
 
     @get("/")
     async def verify(
