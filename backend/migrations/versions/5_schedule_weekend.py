@@ -14,11 +14,19 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "schedules",
-        sa.Column("cron_expr_weekend", sa.Text(), nullable=True),
-    )
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    cols = {c["name"] for c in insp.get_columns("schedules")}
+    if "cron_expr_weekend" not in cols:
+        op.add_column(
+            "schedules",
+            sa.Column("cron_expr_weekend", sa.Text(), nullable=True),
+        )
 
 
 def downgrade() -> None:
-    op.drop_column("schedules", "cron_expr_weekend")
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    cols = {c["name"] for c in insp.get_columns("schedules")}
+    if "cron_expr_weekend" in cols:
+        op.drop_column("schedules", "cron_expr_weekend")
