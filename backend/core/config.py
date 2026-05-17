@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from functools import lru_cache
+
 from pydantic import AnyHttpUrl, Field, SecretStr, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine.url import URL
@@ -25,6 +27,10 @@ class Settings(BaseSettings):
     postgres_db: str = "daios"
     postgres_user: str = "daios"
     postgres_password: str = Field(..., description="PostgreSQL password")
+    db_pool_size: int = 10
+    db_max_overflow: int = 10
+    db_pool_recycle: int = 1800
+    db_pool_timeout: int = 30
 
     # Redis
     redis_host: str = "localhost"
@@ -33,27 +39,35 @@ class Settings(BaseSettings):
     redis_user: str = "daios"
     redis_password: str = Field(..., description="Redis password")
 
-    # Minio
-    minio_host: str = "localhost"
-    minio_port: int = 9000
-    minio_access_key: str = "daios_minio"
-    minio_secret_key: str = Field(..., description="Minio secret key")
-    minio_bucket_media: str = "daios-media"
-    minio_secure: bool = False
-
     # Telegram
     telegram_use_proxy: bool = Field(default=False, description="Enable SOCKS5 proxy for Telegram connections")
     telegram_socks_proxy: str = Field("", description="SOCKS5 proxy URL, e.g. socks5://user:pass@host:port")
     telegram_bot_token: str = Field(..., description="Bot token from @BotFather")
     telegram_user_id: int = Field(..., description="Your numeric Telegram user ID")
+    telegram_logbot_token: str = Field("", description="Token of separate log-bot from @BotFather")
+    telegram_logbot_chat_id: int = Field(0, description="Chat ID to receive log alerts (defaults to telegram_user_id when 0)")
+    log_push_poll_seconds: int = Field(10, description="Interval for log-bot to poll *.error.log files for new lines")
 
     # LLM (OpenRouter — OpenAI-совместимый API)
     openai_api_key: SecretStr = Field(..., description="OpenRouter API key")
     openai_base_url: str = "https://openrouter.ai/api/v1"
 
-    model_orchestrator: str = "mistralai/mistral-7b-instruct-v0.1"
-    model_agents: str = "mistralai/mistral-7b-instruct-v0.1"
-    model_summary: str = "mistralai/mistral-7b-instruct-v0.1"
+    model_default: str = "mistralai/mistral-7b-instruct-v0.1"
+    model_orchestrator: str | None = None
+    model_agents: str | None = None
+    model_summary: str | None = None
+
+    @property
+    def llm_model_orchestrator(self) -> str:
+        return self.model_orchestrator or self.model_default
+
+    @property
+    def llm_model_agents(self) -> str:
+        return self.model_agents or self.model_default
+
+    @property
+    def llm_model_summary(self) -> str:
+        return self.model_summary or self.model_default
 
     # Google Sheets
     google_credentials_file: str = "secrets/credentials.json"
@@ -92,14 +106,10 @@ class Settings(BaseSettings):
     strava_webhook_verify_token: str = Field(..., description="Verify token for Strava webhook subscription handshake")
 
     # CORS
-    allows_ips: list[AnyHttpUrl] = Field(default_factory=list, description="Your server/public IP for CORS allow_origins")
+    allowed_ips: list[AnyHttpUrl] = Field(default_factory=list, description="Your server/public IP for CORS allow_origins")
     container_frontend: str = Field("daios-frontend", description="Frontend container name for CORS")
 
     # ── Вычисляемые поля ────────────────────────────────────────────────
-
-    @property
-    def minio_endpoint(self) -> str:
-        return f"{self.minio_host}:{self.minio_port}"
 
     @computed_field
     @property
@@ -131,12 +141,18 @@ class Settings(BaseSettings):
         if not self.is_production:
             return ["*"]
         origins = [f"http://{self.container_frontend}:3000"]
-        origins.extend(str(ip) for ip in self.allows_ips)
+        origins.extend(str(ip) for ip in self.allowed_ips)
         return origins
 
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    """Lazy, cached factory — preferred over module-level `settings` in new code."""
+    return Settings()
 
 
 settings = Settings()

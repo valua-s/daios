@@ -9,10 +9,10 @@ FRONTEND = docker compose -f frontend.docker-compose.yml --env-file $(ENV)
   infra-up infra-down \
   backend-up backend-down \
   frontend-up frontend-down \
-  restart-api restart-bot restart-scheduler restart-frontend \
+  restart-api restart-bot restart-scheduler restart-logbot restart-frontend \
   up down logs \
-  logs-api logs-bot logs-scheduler \
-  shell-api shell-bot \
+  logs-api logs-bot logs-scheduler logs-logbot \
+  shell-api shell-bot shell-logbot \
   migrate makemigrations rollback \
   lint lint-fix typecheck test init
 
@@ -54,6 +54,9 @@ restart-bot:
 restart-scheduler:
 	$(BACKEND) up -d --build scheduler
 
+restart-logbot:
+	$(BACKEND) up -d --build logbot
+
 restart-front:
 	$(FRONTEND) up -d --build frontend
 
@@ -77,6 +80,9 @@ logs-bot:
 logs-scheduler:
 	$(BACKEND) logs -f scheduler
 
+logs-logbot:
+	$(BACKEND) logs -f logbot
+
 # ── Shell ───────────────────────────────────────────────────────────────
 
 shell-api:
@@ -84,6 +90,9 @@ shell-api:
 
 shell-bot:
 	$(BACKEND) exec bot sh
+
+shell-logbot:
+	$(BACKEND) exec logbot sh
 
 # ── Миграции ────────────────────────────────────────────────────────────
 
@@ -122,4 +131,3 @@ init:
 	@echo ""
 	@echo "✅  DAIOS is running!"
 	@echo "🌐  API:    http://localhost:$$(grep ^PORT_API $(ENV) | cut -d= -f2)"
-	@echo "📦  Minio:  http://localhost:$$(grep ^PORT_MINIO_CONSOLE $(ENV) | cut -d= -f2)"

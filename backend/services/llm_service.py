@@ -36,7 +36,7 @@ class LLMService:
 
     def __init__(self, cfg: Settings) -> None:
         self._llm = ChatOpenAI(
-            model=cfg.model_agents,  # ty:ignore[unknown-argument]
+            model=cfg.llm_model_agents,  # ty:ignore[unknown-argument]
             openai_api_key=cfg.openai_api_key.get_secret_value(),  # ty:ignore[invalid-argument-type]
             openai_api_base=cfg.openai_base_url,
             temperature=0.3,

@@ -118,7 +118,7 @@ notesRouter.get('/', async (c) => {
         <div id="nd-view">
           <div id="nd-title" style="font-size:17px; color:#e8e8e8; font-weight:600; margin-bottom:10px; line-height:1.3;"></div>
           <div id="nd-body-block" style="margin-bottom:18px;">
-            <div id="nd-body" style="font-size:13px; line-height:1.6; white-space:pre-wrap; color:#aaa; background:#111; border-radius:6px; padding:10px 12px;"></div>
+            <div id="nd-body" style="font-size:13px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; color:#aaa; background:#111; border-radius:6px; padding:10px 12px;"></div>
           </div>
         </div>
 

@@ -4,7 +4,7 @@ import enum
 from datetime import date, time
 
 import sqlalchemy as sa
-from sqlalchemy import Enum, Text, Time
+from sqlalchemy import CheckConstraint, Enum, Index, Text, Time
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.models.base import Base
@@ -22,6 +22,12 @@ class TaskPriority(str, enum.Enum):
     high = "high"
 
 
+class TaskSource(str, enum.Enum):
+    telegram = "telegram"
+    web = "web"
+    backlog = "backlog"
+
+
 class Task(Base):
     __tablename__ = "tasks"
 
@@ -33,7 +39,15 @@ class Task(Base):
     priority: Mapped[TaskPriority] = mapped_column(
         Enum(TaskPriority), default=TaskPriority.medium
     )
-    scheduled_date: Mapped[date] = mapped_column("date", sa.Date, nullable=False, index=True)
+    scheduled_date: Mapped[date] = mapped_column(sa.Date, nullable=False, index=True)
     scheduled_time: Mapped[time | None] = mapped_column(Time, nullable=True)
-    source: Mapped[str | None] = mapped_column(Text)  # telegram | web | backlog
+    source: Mapped[str | None] = mapped_column(Text)
     notes: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        CheckConstraint(
+            "source IS NULL OR source IN ('telegram', 'web', 'backlog')",
+            name="source",
+        ),
+        Index("ix_tasks_scheduled_date_status", "scheduled_date", "status"),
+    )

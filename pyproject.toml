@@ -17,8 +17,6 @@ dependencies = [
     "alembic>=1.13",
     # Cache / Queue
     "redis[hiredis]>=5.0",
-    # Storage
-    "minio>=7.2",
     # Telegram
     "aiogram>=3.9",
     # Scheduler

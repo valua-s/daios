@@ -19,7 +19,7 @@ from backend.api.workouts import WorkoutController
 from backend.auth.api.auth import AuthController
 from backend.auth.guards import jwt_auth_guard
 from backend.core.config import settings
-from backend.core.minio_client import ensure_bucket
+from backend.core.logging import setup_logging
 from backend.core.providers import AppProvider
 
 
@@ -29,7 +29,7 @@ async def health_check() -> dict[str, str]:
 
 
 async def _main() -> None:
-    ensure_bucket()
+    setup_logging("api")
     container = make_async_container(AppProvider())
     protected_router = DishkaRouter(
         path="",

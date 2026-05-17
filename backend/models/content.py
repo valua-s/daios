@@ -34,6 +34,5 @@ class ContentItem(Base):
     status: Mapped[ContentStatus] = mapped_column(
         Enum(ContentStatus), default=ContentStatus.new, index=True
     )
-    minio_key: Mapped[str | None] = mapped_column(Text)          # путь в Minio если скачан
     shown_at: Mapped[datetime | None] = mapped_column(DateTime)
     duration_minutes: Mapped[int | None] = mapped_column()       # для видео/подкастов

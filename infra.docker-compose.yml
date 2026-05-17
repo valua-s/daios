@@ -35,31 +35,9 @@ services:
       timeout: 5s
       retries: 5
 
-  minio:
-    image: minio/minio:latest
-    container_name: ${MINIO_HOST}
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    ports:
-      - "${PORT_MINIO_API}:9000"
-      - "${PORT_MINIO_CONSOLE}:9001"
-    volumes:
-      - minio_data:/data
-    networks:
-      - local_infra
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
 volumes:
   postgres_data:
   redis_data:
-  minio_data:
 
 networks:
   local_infra:

@@ -11,6 +11,7 @@ from dishka.integrations.aiogram import setup_dishka
 from backend.bot import ioc
 from backend.bot.handlers import common, focus, tasks, workout
 from backend.bot.middlewares.owner_only import OwnerOnlyMiddleware
+from backend.core.logging import setup_logging
 from backend.core.providers import AppProvider
 
 logger = logging.getLogger(__name__)
@@ -27,10 +28,7 @@ BOT_COMMANDS = [
 
 
 async def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
+    setup_logging("bot")
     logger.info("Starting DAIOS bot...")
 
     async with make_async_container(
