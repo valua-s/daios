@@ -20,6 +20,7 @@ services:
       - local_infra
     volumes:
       - .:/app
+      - ./logs:/app/logs
       # - ./migrations:/app/migrations
 
   bot:
@@ -41,6 +42,7 @@ services:
       - local_infra
     volumes:
       - .:/app
+      - ./logs:/app/logs
 
   scheduler:
     build:
@@ -61,6 +63,24 @@ services:
       - local_infra
     volumes:
       - .:/app
+      - ./logs:/app/logs
+
+  logbot:
+    build:
+      context: .
+      dockerfile: docker/logbot/Dockerfile
+    container_name: ${CONTAINER_LOGBOT:-daios-logbot}
+    restart: unless-stopped
+    env_file: ${ENV_FILE:-.env}
+    environment:
+      DOCKER: "true"
+      PYTHONPATH: /app
+    networks:
+      - internal_service_network
+      - local_infra
+    volumes:
+      - .:/app
+      - ./logs:/app/logs
 
 networks:
   internal_service_network:

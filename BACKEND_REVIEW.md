@@ -33,19 +33,9 @@
 
 ### Архитектура слоя
 
-🟢 Каркас в целом верный: `config` — конфиг, `db/redis/minio_client` — фабрики ресурсов, `providers.py` — Dishka DI как composition root для бизнес-слоёв.
-
-🟠 **Нарушение Clean Architecture / DIP в `providers.py`.** Файл лежит в `core/`, но импортирует **все** верхние слои: `agents/*`, `auth/service/*`, `integrations/*`, `repositories/*`, `services/*`. Получается, что нижний слой (`core`) знает о верхних — это «инверсия зависимостей наоборот». Это конкретный composition root, не «инфраструктура».
-- *Fix:* перенести `providers.py` в отдельный модуль `backend/composition/` (или `backend/bootstrap/`), а `core/` оставить только с примитивами (settings + фабрики ресурсов). Это уберёт неявную цикличность через `core`.
-
 🟠 **`core/` импортируется снизу — но при текущей структуре `providers.py` сам потянет за собой всё дерево.** Любой импорт `from backend.core.providers import ...` тянет 30+ модулей. На юнит-тестах это даст и тормоза, и кучу обязательных env-переменных.
 
 ### `config.py`
-
-🟠 **Module-level singleton `settings = Settings()` на строке 137.** При `from backend.core.config import settings` Pydantic сразу читает `.env`, и если нет `postgres_password`/`redis_password`/`jwt_secret_key`/`admin_*`/`google_sheets_workout_id`/`bus_schedule_url`/`openweather_api_key`/`openai_api_key`/`telegram_*` — `ImportError` поднимется на этапе импорта в любом тесте/скрипте.
-- *Fix:* функция `get_settings()` с `@lru_cache`, либо инициализация только в composition root и проброс через DI. В Dishka уже есть `@provide get_settings`, так что прямой импорт `settings` нужно искоренить.
-
-🟡 `allow_origins`: при `is_production=False` возвращает `["*"]` — в новых браузерах с `credentials` это сломается; но для dev ок.
 
 🟡 `allows_ips: list[AnyHttpUrl]` — название во множественном числе через `s` (вместо `allowed_ips`). Гигиена.
 
@@ -77,11 +67,7 @@
 
 🟠 См. выше — лежит не в том слое.
 
-🟠 **`get_settings` (строка 44) возвращает module-level `settings`.** Это значит, что DI-провайдер на самом деле не контролирует жизненный цикл — `Settings()` уже был создан на импорте. Сделать `return Settings()` (и убрать импорт `settings`).
-
 🟠 **`get_redis` (строка 48) — APP-scope, но возвращает `Redis()` без `await client.aclose()`** при завершении. Утечка соединений на shutdown. Сделать `AsyncIterator[Redis]` с `try/finally`.
-
-🟠 **`get_http_client` (строка 52) — один на всё приложение, APP-scope.** Это правильно для пула, но `httpx.AsyncClient(timeout=30.0)` — общий timeout 30 сек на каждый запрос; для медленных RSS/новостей это ок, а для критических ручек хочется отдельных клиентов с разными timeout. Не баг, но дизайнерское решение зафиксировать.
 
 🟠 **`get_session` (строка 92) делает `await session.commit()` после `yield`** — это автокоммит на каждый HTTP-запрос. Удобно, но скрытно: сервисы и репозитории не вызывают commit явно, и тестировать транзакционные сценарии тяжело. По DDD коммит должен делать application service (Unit of Work). Документировать как осознанный выбор либо переписать через UoW.
 
@@ -102,6 +88,8 @@
 
 🟠 **Потенциальная цикличность через `providers.py`.** Сейчас её нет, потому что верхние слои не импортируют `core/providers`. Но это хрупко — `providers.py` должен жить в отдельном модуле выше core.
 
+переназвать core module в infra
+
 ### Перформанс
 
 - 🟠 нет настроек пула БД (см. `db.py`)
@@ -112,15 +100,10 @@
 ### План фиксов для Core (приоритет)
 
 1. 🔴 **`ensure_bucket`** — раскомментировать `make_bucket` или явно `raise`.
-2. 🟠 **`settings`-singleton** — `@lru_cache`-фабрика, искоренить прямые импорты `settings`.
-3. 🟠 **Перенос `providers.py`** в `backend/composition/` и разбиение на под-провайдеры.
-4. 🟠 **`engine`/`AsyncSessionFactory`/`minio_client`** — ленивые фабрики через DI.
 5. 🟠 **`get_redis`** — `AsyncIterator` с `aclose` на shutdown.
 6. 🟠 **Пул БД** — `pool_size`, `max_overflow`, `pool_recycle` из конфига.
-7. 🟠 **Убрать поле `docker`** из `Settings`, использовать env-vars напрямую.
 8. 🟡 DRY в `database_url`/`local_database_url`, в module-defaults для трёх моделей LLM.
 9. 🟡 Redis timeouts/health-check.
-10. 🟡 Очистить region/комменты в `minio_client.py`.
 
 ---
 
@@ -162,23 +145,12 @@ metadata = MetaData(naming_convention=naming_convention)
 
 ### `task.py`
 
-🟢 enum-ы `TaskStatus`/`TaskPriority` через `str, enum.Enum` — корректно (хорошая сериализация).
-
 🟠 **Колонка БД называется `date` (см. `mapped_column("date", sa.Date, ...)` строка 36),** а атрибут — `scheduled_date`. Это создаёт две проблемы:
-1. Импорт `from datetime import date` в этом же файле и колонка с именем `date` в БД — ловушка для будущей правки (легко натолкнуться на `Task.date` через `__table__.c.date`).
-2. Любые сырые SQL-запросы должны помнить про переименование. Алиас стоит того только если у вас уже была миграция; иначе лучше выровнять имена через миграцию.
+2. выровнять имена через миграцию.
 
 🟠 Нет уникального констрейнта/композитного индекса по `(scheduled_date, title)` или хотя бы индекса по `(scheduled_date, status)` — а сервисы фильтруют по «сегодня + статус». См. репозитории, но фундамент закладывается здесь.
 
 🟡 Поле `source: Mapped[str | None] = mapped_column(Text)` — без enum, хотя в комменте перечислены три значения. Использовать `Enum(...)` или хотя бы `CheckConstraint`.
-
-🟡 Нет `__repr__` ни на одной модели — для отладки/логов полезно.
-
-### `backlog.py`
-
-🟢 Минимально и адекватно.
-
-🟡 Нет ссылки на `Task` (если из бэклога создаётся задача — нет трассировки). Если функционально нужно — добавить `created_task_id` FK.
 
 ### `focus.py`
 
@@ -205,15 +177,7 @@ metadata = MetaData(naming_convention=naming_convention)
 
 🟡 `event_name` — голая строка. Логичнее `Enum(EventName)` или хотя бы константы; иначе опечатка в одном месте — и job не зарегистрируется. Сервис должен валидировать.
 
-### `settings.py` (UserSetting)
-
-🟠 PK по `key: Text` — для очень частых лукапов это нормально (key — uniq и так), но Postgres любит integer PK, плюс это «семантический PK», который изменить нельзя. Лучше отдельный `id` + `key UNIQUE`.
-
-🟠 См. выше: ключевой антипаттерн «таблица настроек как dict». Хорошо для прототипа, плохо для долгой жизни.
-
 ### `content.py`
-
-🟢 Два enum-а, индекс по `topic` и `status` — корректно.
 
 🟠 **Запросы к ленте фильтруют по `status` + `topic` + сортируют по `shown_at`/`created_at`**, а индекса по `(status, topic)` или составному нет — будут seq-сканы при росте таблицы. См. репозитории/сервисы.
 
@@ -227,8 +191,6 @@ metadata = MetaData(naming_convention=naming_convention)
 
 ### `workout_cache.py`
 
-🟢 Один тип кэша на дату, `unique=True` на `workout_date`.
-
 🟠 **`data_json: Text` вместо `JSONB`.** Postgres умеет JSONB, индексирует, валидирует, фильтрует — а сейчас всё парсится в Python. Заменить на `JSONB` (`from sqlalchemy.dialects.postgresql import JSONB`).
 
 🟡 `fetched_at: DateTime` — без `timezone=True`, без `server_default=now()`.
@@ -241,13 +203,8 @@ metadata = MetaData(naming_convention=naming_convention)
 
 🟠 **Этот файл импортирует `backend.auth.models.user.User`** (строка 4). Сейчас `auth/` — отдельный «вертикальный модуль», но его модель привязана к общему `Base` и регистрируется здесь. Это **скрытая связь**: `models/` знает про `auth/`. Если хотите по-настоящему модульный `auth`, у него должна быть своя `metadata`/своя миграционная стрелка, либо нейтральный `models/user.py`. Архитектурное противоречие, но прагматично работает.
 
-### Импорты / цикличность
 
-- Все модели → только `backend.models.base`. ✅
-- `models/__init__.py` → `auth.models.user`. Однонаправленная связь.
-- `auth.models.user` → `backend.models.base`. ✅ Цикличности нет.
-- Внешние слои импортируют модели свободно — ожидаемо.
-
+-----
 ### Перформанс — выводы для слоя
 
 - 🟠 Отсутствуют составные индексы: `(scheduled_date, status)` для `tasks`, `(status, topic)`/`(status, shown_at)` для `content_items`.

@@ -11,6 +11,7 @@ from dishka import AsyncContainer, make_async_container
 from redis.asyncio import Redis
 
 from backend.core.config import settings
+from backend.core.logging import setup_logging
 from backend.core.providers import AppProvider
 from backend.scheduler.jobs import (
     make_collect_content,
@@ -151,10 +152,7 @@ async def listen_for_reload(
 
 
 async def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
+    setup_logging("scheduler")
     logger.info("Starting DAIOS scheduler...")
 
     container = make_async_container(AppProvider())

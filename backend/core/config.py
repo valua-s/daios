@@ -39,19 +39,14 @@ class Settings(BaseSettings):
     redis_user: str = "daios"
     redis_password: str = Field(..., description="Redis password")
 
-    # Minio
-    minio_host: str = "localhost"
-    minio_port: int = 9000
-    minio_access_key: str = "daios_minio"
-    minio_secret_key: str = Field(..., description="Minio secret key")
-    minio_bucket_media: str = "daios-media"
-    minio_secure: bool = False
-
     # Telegram
     telegram_use_proxy: bool = Field(default=False, description="Enable SOCKS5 proxy for Telegram connections")
     telegram_socks_proxy: str = Field("", description="SOCKS5 proxy URL, e.g. socks5://user:pass@host:port")
     telegram_bot_token: str = Field(..., description="Bot token from @BotFather")
     telegram_user_id: int = Field(..., description="Your numeric Telegram user ID")
+    telegram_logbot_token: str = Field("", description="Token of separate log-bot from @BotFather")
+    telegram_logbot_chat_id: int = Field(0, description="Chat ID to receive log alerts (defaults to telegram_user_id when 0)")
+    log_push_poll_seconds: int = Field(10, description="Interval for log-bot to poll *.error.log files for new lines")
 
     # LLM (OpenRouter — OpenAI-совместимый API)
     openai_api_key: SecretStr = Field(..., description="OpenRouter API key")
@@ -115,10 +110,6 @@ class Settings(BaseSettings):
     container_frontend: str = Field("daios-frontend", description="Frontend container name for CORS")
 
     # ── Вычисляемые поля ────────────────────────────────────────────────
-
-    @property
-    def minio_endpoint(self) -> str:
-        return f"{self.minio_host}:{self.minio_port}"
 
     @computed_field
     @property

@@ -33,12 +33,13 @@ def _quoted_list(values: tuple[str, ...]) -> str:
 def upgrade() -> None:
     # tasks.date → tasks.scheduled_date
     op.alter_column("tasks", "date", new_column_name="scheduled_date")
-    op.drop_index("ix_tasks_date", table_name="tasks")
+    op.drop_index("ix_tasks_date", table_name="tasks", if_exists=True)
     op.create_index(
         "ix_tasks_scheduled_date",
         "tasks",
         ["scheduled_date"],
         unique=False,
+        if_not_exists=True,
     )
     # composite index for the hot "today + status" query
     op.create_index(
@@ -46,6 +47,7 @@ def upgrade() -> None:
         "tasks",
         ["scheduled_date", "status"],
         unique=False,
+        if_not_exists=True,
     )
     # tasks.source CHECK constraint (kept as Text, no native PG enum)
     op.create_check_constraint(
@@ -53,7 +55,7 @@ def upgrade() -> None:
         "tasks",
         f"source IS NULL OR source IN ({_quoted_list(_TASK_SOURCES)})",
     )
-
+    
     # focus: only one row per (period, period_key)
     op.create_unique_constraint(
         "uq_focus_period_period_key",
