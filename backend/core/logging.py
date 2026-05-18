@@ -21,21 +21,13 @@ def setup_logging(service_name: str, level: int = logging.INFO) -> None:
     stream = logging.StreamHandler()
     stream.setFormatter(formatter)
 
-    file_all = RotatingFileHandler(
-        LOG_DIR / f"{service_name}.log",
-        maxBytes=10_000_000,
-        backupCount=5,
-        encoding="utf-8",
-    )
-    file_all.setFormatter(formatter)
-
     file_err = RotatingFileHandler(
         LOG_DIR / f"{service_name}.error.log",
         maxBytes=5_000_000,
         backupCount=5,
         encoding="utf-8",
     )
-    file_err.setLevel(logging.ERROR)
+    file_err.setLevel(logging.WARNING)
     file_err.setFormatter(formatter)
 
-    root.handlers[:] = [stream, file_all, file_err]
+    root.handlers[:] = [stream, file_err]

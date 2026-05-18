@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
+from datetime import time
 
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,6 +54,17 @@ class ScheduleDTO:
 
 SCHEDULE_RELOAD_CHANNEL = "schedule:reload"
 
+WAKEUP_BASE_TIME_KEY = "wakeup.base_time"
+WAKEUP_BASE_TIME_DEFAULT = "07:30"
+_TIME_RE = re.compile(r"^([01]?\d|2[0-3]):([0-5]\d)$")
+
+
+def _parse_hhmm(value: str) -> time:
+    m = _TIME_RE.match(value.strip())
+    if not m:
+        raise ValueError(f"Invalid HH:MM time: {value!r}")
+    return time(hour=int(m.group(1)), minute=int(m.group(2)))
+
 
 class SettingsService:
     def __init__(self, session: AsyncSession, redis: Redis) -> None:
@@ -93,6 +106,21 @@ class SettingsService:
             await self._settings.upsert(f"interests.{key}", _DELETED)
         else:
             await self._settings.delete(f"interests.{key}")
+
+    # ── Время подъёма ─────────────────────────────────────────────────────
+
+    async def get_wakeup_base_time(self) -> time:
+        all_settings = await self._settings.get_all()
+        raw = all_settings.get(WAKEUP_BASE_TIME_KEY, WAKEUP_BASE_TIME_DEFAULT)
+        try:
+            return _parse_hhmm(raw)
+        except ValueError:
+            logger.warning("Invalid wakeup.base_time in DB: %r, using default", raw)
+            return _parse_hhmm(WAKEUP_BASE_TIME_DEFAULT)
+
+    async def set_wakeup_base_time(self, value: str) -> None:
+        _parse_hhmm(value)  # validate
+        await self._settings.upsert(WAKEUP_BASE_TIME_KEY, value)
 
     # ── Расписание ────────────────────────────────────────────────────────
 

@@ -7,14 +7,20 @@ export async function apiFetch<T>(path: string, options?: RequestInit, token?: s
     ...(options?.headers as Record<string, string> | undefined),
   }
   if (token) headers['Authorization'] = `Bearer ${token}`
+  const method = (options?.method ?? 'GET').toUpperCase()
+  const t0 = performance.now()
   try {
     res = await fetch(`${API_URL}${path}`, {
       ...options,
       headers,
     })
   } catch (e) {
+    const ms = Math.round(performance.now() - t0)
+    console.info(`[api] ${method} ${path} -> ERR in ${ms}ms`)
     throw new Error(`Бэкенд недоступен (${API_URL})`)
   }
+  const ms = Math.round(performance.now() - t0)
+  console.info(`[api] ${method} ${path} -> ${res.status} in ${ms}ms`)
   if (!res.ok) {
     throw new Error(`API ${res.status}: ${await res.text()}`)
   }
@@ -179,6 +185,19 @@ export const updateSchedule = (
   apiFetch<ScheduleDTO>(`/api/settings/schedules/${event_name}`, {
     method: 'PATCH',
     body: JSON.stringify({ time, enabled, time_weekend: time_weekend ?? null }),
+  }, token)
+
+export interface WakeupDTO {
+  base_time: string
+}
+
+export const getWakeup = (token?: string) =>
+  apiFetch<WakeupDTO>('/api/settings/wakeup', undefined, token)
+
+export const updateWakeup = (base_time: string, token?: string) =>
+  apiFetch<WakeupDTO>('/api/settings/wakeup', {
+    method: 'PATCH',
+    body: JSON.stringify({ base_time }),
   }, token)
 
 export const addInterest = (key: string, token?: string) =>

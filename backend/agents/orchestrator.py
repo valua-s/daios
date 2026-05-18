@@ -15,6 +15,7 @@ from backend.bot.formatters import (
     format_evening_brief,
     format_evening_summary,
     format_morning_brief,
+    format_wakeup_plan,
 )
 from backend.bot.keyboards import (
     evening_postpone_all_keyboard,
@@ -23,6 +24,7 @@ from backend.bot.keyboards import (
 from backend.core.config import settings
 from backend.integrations.telegram import TelegramNotifier
 from backend.services.task_service import TaskService
+from backend.services.wakeup_planner import WakeupPlanner
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +41,7 @@ class Orchestrator(BaseAgent):
         evening_agent: EveningAgent,
         task_service: TaskService,
         notifier: TelegramNotifier,
+        wakeup_planner: WakeupPlanner,
     ) -> None:
         self._context = context_agent
         self._workout = workout_agent
@@ -47,6 +50,7 @@ class Orchestrator(BaseAgent):
         self._evening = evening_agent
         self._task_service = task_service
         self._notifier = notifier
+        self._wakeup_planner = wakeup_planner
 
     async def _run_agents(self, state: dict[str, Any]) -> dict[str, Any]:
         """Запускает агентов последовательно — общая DB-сессия."""
@@ -94,6 +98,14 @@ class Orchestrator(BaseAgent):
                 f"👆 {len(pending)} невыполненных — выбери что делать с каждой или перенеси все:",
                 keyboard=evening_postpone_all_keyboard(),
             )
+
+        try:
+            today = datetime.now(ZoneInfo(settings.app_timezone)).date()
+            wakeup = await self._wakeup_planner.plan_for_tomorrow(today)
+            if wakeup is not None:
+                await self._notifier.send(format_wakeup_plan(wakeup))
+        except Exception:
+            logger.exception("Failed to plan tomorrow's wakeup")
 
         return {**state, "evening_summary": text}
 
