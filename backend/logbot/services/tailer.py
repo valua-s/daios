@@ -66,7 +66,7 @@ async def run_error_tailer(bot: Bot) -> None:
     for svc, pos in positions.items():
         pos.initialize(_err_path(svc))
 
-    logger.info("Error tailer started, polling every %ss", settings.log_push_poll_seconds)
+    logger.info("Log tailer started, polling every %ss", settings.log_push_poll_seconds)
     while True:
         try:
             await asyncio.sleep(settings.log_push_poll_seconds)

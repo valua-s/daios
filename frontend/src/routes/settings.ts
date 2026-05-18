@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { baseLayout } from '../layouts/base'
 import { card, sectionTitle } from '../components/card'
-import { getInterests, setInterests, getSchedules, updateSchedule, addInterest, deleteInterest } from '../api'
+import { getInterests, setInterests, getSchedules, updateSchedule, addInterest, deleteInterest, getWakeup, updateWakeup } from '../api'
 
 export const settingsRouter = new Hono()
 
@@ -33,6 +33,20 @@ settingsRouter.post('/interests/:key/delete', async (c) => {
   return c.redirect('/settings')
 })
 
+settingsRouter.post('/wakeup', async (c) => {
+  const token = getCookie(c, 'daios_session')
+  const body = await c.req.parseBody()
+  const base_time = String(body.base_time ?? '').trim()
+  if (base_time) {
+    try {
+      await updateWakeup(base_time, token)
+    } catch (e) {
+      // молча редиректим — валидацию делает HTML input type=time
+    }
+  }
+  return c.redirect('/settings')
+})
+
 settingsRouter.post('/schedules/:event_name', async (c) => {
   const token = getCookie(c, 'daios_session')
   const event_name = c.req.param('event_name')
@@ -50,9 +64,14 @@ settingsRouter.get('/', async (c) => {
   const token = getCookie(c, 'daios_session')
   let interests: Record<string, boolean>
   let schedules: Awaited<ReturnType<typeof getSchedules>>
+  let wakeup: Awaited<ReturnType<typeof getWakeup>>
 
   try {
-    ;[interests, schedules] = await Promise.all([getInterests(token), getSchedules(token)])
+    ;[interests, schedules, wakeup] = await Promise.all([
+      getInterests(token),
+      getSchedules(token),
+      getWakeup(token),
+    ])
   } catch (e: any) {
     return c.html(baseLayout('Настройки', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'settings'))
   }
@@ -172,7 +191,20 @@ settingsRouter.get('/', async (c) => {
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;" class="settings-grid">
       ${card(`${sectionTitle('Интересы')}<div style="font-size:12px; color:#555; margin-top:-10px; margin-bottom:14px;">Темы для подборки контента</div>${interestsForm}`)}
-      ${card(`${sectionTitle('Расписание')}<div style="font-size:12px; color:#555; margin-top:-10px; margin-bottom:14px;">Автоматические задачи</div>${schedules.map(scheduleRow).join('')}`)}
+      ${card(`${sectionTitle('Расписание')}<div style="font-size:12px; color:#555; margin-top:-10px; margin-bottom:14px;">Автоматические задачи</div>${schedules.map(scheduleRow).join('')}
+        <form method="POST" action="/settings/wakeup"
+              style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #1e1e1e; flex-wrap:wrap;">
+          <div style="flex:1; min-width:160px;">
+            <div style="font-size:14px; color:#e8e8e8;">Базовое время подъёма</div>
+            <div style="font-size:11px; color:#555; margin-top:2px;">От него считается будильник для тренировки</div>
+          </div>
+          ${timeInput('base_time', wakeup.base_time, 'Подъём')}
+          <button type="submit" style="
+            padding:6px 14px; border-radius:6px; font-size:13px;
+            background:#1e1e1e; color:#e8e8e8; border:1px solid #2a2a2a; cursor:pointer;
+          ">Сохранить</button>
+        </form>
+      `)}
     </div>
   `
 

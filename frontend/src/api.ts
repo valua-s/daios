@@ -181,6 +181,19 @@ export const updateSchedule = (
     body: JSON.stringify({ time, enabled, time_weekend: time_weekend ?? null }),
   }, token)
 
+export interface WakeupDTO {
+  base_time: string
+}
+
+export const getWakeup = (token?: string) =>
+  apiFetch<WakeupDTO>('/api/settings/wakeup', undefined, token)
+
+export const updateWakeup = (base_time: string, token?: string) =>
+  apiFetch<WakeupDTO>('/api/settings/wakeup', {
+    method: 'PATCH',
+    body: JSON.stringify({ base_time }),
+  }, token)
+
 export const addInterest = (key: string, token?: string) =>
   apiFetch<Record<string, boolean>>(`/api/settings/interests/${key}`, { method: 'POST' }, token)
 

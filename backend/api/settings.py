@@ -31,6 +31,16 @@ class UpdateScheduleRequest:
     time_weekend: str | None = None
 
 
+@dataclass
+class WakeupResponseDTO:
+    base_time: str
+
+
+@dataclass
+class UpdateWakeupRequest:
+    base_time: str
+
+
 def _to_response(dto: ScheduleDTO) -> ScheduleResponseDTO:
     return ScheduleResponseDTO(
         event_name=dto.event_name,
@@ -89,6 +99,26 @@ class SettingsController(Controller):
     ) -> list[ScheduleResponseDTO]:
         schedules = await settings_service.get_schedules()
         return [_to_response(s) for s in schedules]
+
+    @get("/wakeup")
+    async def get_wakeup(
+        self, settings_service: FromDishka[SettingsService]
+    ) -> WakeupResponseDTO:
+        t = await settings_service.get_wakeup_base_time()
+        return WakeupResponseDTO(base_time=t.strftime("%H:%M"))
+
+    @patch("/wakeup")
+    async def update_wakeup(
+        self,
+        data: UpdateWakeupRequest,
+        settings_service: FromDishka[SettingsService],
+    ) -> WakeupResponseDTO:
+        try:
+            await settings_service.set_wakeup_base_time(data.base_time)
+        except ValueError as e:
+            raise ClientException(detail=str(e))
+        t = await settings_service.get_wakeup_base_time()
+        return WakeupResponseDTO(base_time=t.strftime("%H:%M"))
 
     @patch("/schedules/{event_name:str}")
     async def update_schedule(

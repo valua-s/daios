@@ -39,6 +39,7 @@ from backend.services.note_service import NoteService
 from backend.services.settings_service import SettingsService
 from backend.services.strava_service import StravaService
 from backend.services.task_service import TaskService
+from backend.services.wakeup_planner import WakeupPlanner
 from backend.services.workout_service import WorkoutService
 
 
@@ -226,6 +227,15 @@ class AppProvider(Provider):
         return EveningAgent(task_service)
 
     @provide(scope=Scope.REQUEST)
+    def get_wakeup_planner(
+        self,
+        workout_service: WorkoutService,
+        weather_client: WeatherClient,
+        settings_service: SettingsService,
+    ) -> WakeupPlanner:
+        return WakeupPlanner(workout_service, weather_client, settings_service)
+
+    @provide(scope=Scope.REQUEST)
     def get_orchestrator(
         self,
         context_agent: ContextAgent,
@@ -235,8 +245,10 @@ class AppProvider(Provider):
         evening_agent: EveningAgent,
         task_service: TaskService,
         notifier: TelegramNotifier,
+        wakeup_planner: WakeupPlanner,
     ) -> Orchestrator:
         return Orchestrator(
             context_agent, workout_agent, task_agent,
             content_agent, evening_agent, task_service, notifier,
+            wakeup_planner,
         )

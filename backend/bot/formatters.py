@@ -9,6 +9,7 @@ from backend.integrations.bus_schedule import BusArrival
 from backend.integrations.weather import WeatherData
 from backend.models.content import ContentItem, ContentType
 from backend.models.task import Task
+from backend.services.wakeup_planner import WakeupPlan
 from backend.services.workout_service import WorkoutPlan
 
 
@@ -135,6 +136,26 @@ def format_evening_brief(
         lines.extend(["", format_content_items(content_items)])
 
     return "\n".join(lines)
+
+
+_WORKOUT_ICONS = {
+    "running": "🏃",
+    "strength": "💪",
+    "combined": "🏋️🏃",
+}
+
+
+def format_wakeup_plan(plan: WakeupPlan) -> str:
+    icon = _WORKOUT_ICONS.get(plan.workout.type, "💪")
+    when_ru = "утром" if plan.when == "morning" else "вечером"
+    alarm = plan.alarm_time.strftime("%H:%M")
+    rain_note = ""
+    if plan.when == "evening" and plan.rain_expected:
+        rain_note = " (утром обещают дождь)"
+    return (
+        f"⏰ <b>Завтра:</b> {icon} {plan.workout.description} — {when_ru}{rain_note}\n"
+        f"   Подъём в <b>{alarm}</b>"
+    )
 
 
 def format_evening_summary(done: list[Task], pending: list[Task]) -> str:
