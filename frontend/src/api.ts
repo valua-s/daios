@@ -7,14 +7,20 @@ export async function apiFetch<T>(path: string, options?: RequestInit, token?: s
     ...(options?.headers as Record<string, string> | undefined),
   }
   if (token) headers['Authorization'] = `Bearer ${token}`
+  const method = (options?.method ?? 'GET').toUpperCase()
+  const t0 = performance.now()
   try {
     res = await fetch(`${API_URL}${path}`, {
       ...options,
       headers,
     })
   } catch (e) {
+    const ms = Math.round(performance.now() - t0)
+    console.info(`[api] ${method} ${path} -> ERR in ${ms}ms`)
     throw new Error(`Бэкенд недоступен (${API_URL})`)
   }
+  const ms = Math.round(performance.now() - t0)
+  console.info(`[api] ${method} ${path} -> ${res.status} in ${ms}ms`)
   if (!res.ok) {
     throw new Error(`API ${res.status}: ${await res.text()}`)
   }

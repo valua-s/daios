@@ -21,6 +21,7 @@ from backend.auth.guards import jwt_auth_guard
 from backend.core.config import settings
 from backend.core.logging import setup_logging
 from backend.core.providers import AppProvider
+from backend.core.timing_middleware import TimingMiddleware
 
 
 @get("/health")
@@ -49,6 +50,7 @@ async def _main() -> None:
         cors_config=CORSConfig(
             allow_origins=settings.allow_origins,
         ),
+        middleware=[TimingMiddleware],
         debug=not settings.is_production,
     )
     setup_dishka(container, app)

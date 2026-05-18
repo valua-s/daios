@@ -39,11 +39,14 @@ app.all('/api/*', async (c) => {
   const token = getCookie(c, SESSION_COOKIE)
   if (token) headers['Authorization'] = `Bearer ${token}`
 
+  const t0 = performance.now()
   const res = await fetch(url, {
     method: c.req.method,
     headers,
     body: ['GET', 'HEAD'].includes(c.req.method) ? undefined : await c.req.text(),
   })
+  const ms = Math.round(performance.now() - t0)
+  console.info(`[proxy] ${c.req.method} ${c.req.path} -> ${res.status} in ${ms}ms`)
   return new Response(res.body, {
     status: res.status,
     headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' },
