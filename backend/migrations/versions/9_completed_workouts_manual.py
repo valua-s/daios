@@ -20,7 +20,7 @@ def upgrade() -> None:
     op.execute("TRUNCATE TABLE completed_workouts")
 
     op.drop_index("ix_completed_workouts_strava_activity_id", table_name="completed_workouts")
-    op.drop_constraint("uq_completed_workouts_strava_activity_id", "completed_workouts", type_="unique")
+    op.drop_constraint("uq_completed_workouts_strava_activity_id", "completed_workouts", type_="unique", if_exists=True)
     op.drop_column("completed_workouts", "strava_activity_id")
     op.drop_column("completed_workouts", "distance_km_override")
     op.drop_column("completed_workouts", "started_at")
