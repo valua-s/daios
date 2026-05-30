@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from typing import Self
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, EmailStr, model_validator
+
+if TYPE_CHECKING:
+    from typing import Self
 
 
 class LoginRequest(BaseModel):
@@ -35,7 +38,8 @@ class ChangePasswordRequest(BaseModel):
     @model_validator(mode="after")
     def passwords_match(self) -> Self:
         if self.new_password != self.new_password_confirm:
-            raise ValueError("Passwords do not match")
+            msg = "Passwords do not match"
+            raise ValueError(msg)
         return self
 
 

@@ -110,5 +110,7 @@ docker-compose.override.yml
 /secrets
 CONTEXT.md
 CODE_REVIEW.md
+CLAUDE.md
+tasks.md
 
 *mcp*

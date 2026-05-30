@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING
 
 from backend.agents.base import BaseAgent
 from backend.services.task_service import TaskService
+
+if TYPE_CHECKING:
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class TaskAgent(BaseAgent):
     """Получает задачи на сегодня и добавляет их в state.
-    
+
     Добавляет ключ `tasks` в state.
     """
 

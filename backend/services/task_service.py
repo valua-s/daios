@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
-from typing import Any
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +11,10 @@ from backend.models.backlog import BacklogItem
 from backend.models.task import Task, TaskPriority, TaskStatus
 from backend.repositories.backlog_repo import BacklogRepository
 from backend.repositories.task_repo import TaskRepository
+
+if TYPE_CHECKING:
+    from datetime import date, time
+    from typing import Any
 
 
 def _today() -> date:
@@ -50,7 +54,7 @@ class TaskService:
         scheduled_time: time | None = None,
         notes: str | None = None,
     ) -> Task:
-        task = await self._tasks.create(
+        return await self._tasks.create(
             title=title,
             priority=TaskPriority(priority),
             source=source,
@@ -60,15 +64,12 @@ class TaskService:
             notes=notes,
         )
 
-        return task
-
     async def update_task(
         self,
         task_id: int,
         **kwargs: Any,
     ) -> Task | None:
-        updated = await self._tasks.update(task_id, **kwargs)
-        return updated
+        return await self._tasks.update(task_id, **kwargs)
 
     async def toggle_task(self, task_id: int) -> Task | None:
         task = await self._tasks.get(task_id)
@@ -77,23 +78,17 @@ class TaskService:
         new_status = (
             TaskStatus.pending if task.status == TaskStatus.done else TaskStatus.done
         )
-        updated = await self._tasks.update(task_id, status=new_status)
-
-        return updated
+        return await self._tasks.update(task_id, status=new_status)
 
     async def delete_task(self, task_id: int) -> bool:
-        result = await self._tasks.delete(task_id)
-
-        return result
+        return await self._tasks.delete(task_id)
 
     async def postpone_task(self, task_id: int) -> Task | None:
-        updated = await self._tasks.update(
+        return await self._tasks.update(
             task_id,
             scheduled_date=_today() + timedelta(days=1),
             status=TaskStatus.pending,
         )
-
-        return updated
 
     async def move_pending_to_backlog(self) -> int:
         """Переносит все просроченные невыполненные задачи (до сегодня) в бэклог."""
@@ -109,6 +104,7 @@ class TaskService:
 
     async def postpone_pending_to_tomorrow(self) -> int:
         """Переносит все невыполненные задачи на сегодня на завтра.
+
         Возвращает количество перенесённых задач.
         """
         today = _today()
@@ -161,6 +157,4 @@ class TaskService:
         )
 
     async def delete_backlog_item(self, item_id: int) -> bool:
-        result = await self._backlog.delete(item_id)
-
-        return result
+        return await self._backlog.delete(item_id)

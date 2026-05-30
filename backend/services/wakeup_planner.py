@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta
-from typing import Literal
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 from backend.core.config import settings
 from backend.integrations.weather import WeatherClient
 from backend.services.settings_service import SettingsService
 from backend.services.workout_service import WorkoutPlan, WorkoutService
+
+if TYPE_CHECKING:
+    from datetime import date, time
+    from typing import Literal
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +39,7 @@ def _shift(base: time, minus_minutes: int, on_date: date) -> time:
 
 class WakeupPlanner:
     """Решает, ставить ли завтрашнюю тренировку на утро или на вечер,
+
     и считает время будильника.
     """
 

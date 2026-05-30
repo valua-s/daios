@@ -52,7 +52,7 @@ class NewsClient(BaseIntegration):
             published_at: datetime | None = None
             if raw := item.get("publishedAt"):
                 try:
-                    published_at = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                    published_at = datetime.fromisoformat(raw)
                 except Exception:
                     pass
 

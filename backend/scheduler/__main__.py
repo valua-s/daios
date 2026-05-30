@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import signal
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -27,7 +27,12 @@ from backend.services.settings_service import (
     SettingsService,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 logger = logging.getLogger(__name__)
+
+_CRON_FIELDS_COUNT = 5
 
 # Маппинг event_name → фабрика job-функции
 JOB_FACTORIES: dict[str, Callable[[AsyncContainer], Callable]] = {
@@ -49,8 +54,9 @@ def _parse_cron(cron_expr: str, dow_override: str | None = None) -> list[CronTri
     перекрывает dow из выражения (используется для weekday/weekend сплита).
     """
     parts = cron_expr.split()
-    if len(parts) < 5:
-        raise ValueError(f"Invalid cron expression: {cron_expr!r}")
+    if len(parts) < _CRON_FIELDS_COUNT:
+        msg = f"Invalid cron expression: {cron_expr!r}"
+        raise ValueError(msg)
     minute, hours_str, dom, month, dow = parts[:5]
     kwargs: dict[str, str | int] = {"timezone": settings.app_timezone}
     if dom != "*":

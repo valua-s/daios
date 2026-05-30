@@ -10,19 +10,19 @@ from sqlalchemy.orm import Mapped, mapped_column
 from backend.models.base import Base
 
 
-class TaskStatus(str, enum.Enum):
+class TaskStatus(enum.StrEnum):
     pending = "pending"
     done = "done"
     cancelled = "cancelled"
 
 
-class TaskPriority(str, enum.Enum):
+class TaskPriority(enum.StrEnum):
     low = "low"
     medium = "medium"
     high = "high"
 
 
-class TaskSource(str, enum.Enum):
+class TaskSource(enum.StrEnum):
     telegram = "telegram"
     web = "web"
     backlog = "backlog"

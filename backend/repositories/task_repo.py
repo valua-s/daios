@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from datetime import date
+from typing import TYPE_CHECKING
 
 from sqlalchemy import case, select, update
 
 from backend.models.task import Task, TaskPriority, TaskStatus
 from backend.repositories.base import BaseRepository
+
+if TYPE_CHECKING:
+    from datetime import date
 
 _PRIORITY_ORDER = case(
     (Task.priority == TaskPriority.high, 0),

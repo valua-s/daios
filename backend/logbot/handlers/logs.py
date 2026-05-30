@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from aiogram import Router
 from aiogram.filters import Command, CommandObject
@@ -9,6 +9,9 @@ from aiogram.types import BufferedInputFile, Message
 
 from backend.core.logging import LOG_DIR
 from backend.logbot.services.tailer import MAX_TG_TEXT, SERVICES
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 router = Router(name="logs")
 

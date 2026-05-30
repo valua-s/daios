@@ -9,13 +9,13 @@ from sqlalchemy.orm import Mapped, mapped_column
 from backend.models.base import Base
 
 
-class ContentType(str, enum.Enum):
+class ContentType(enum.StrEnum):
     article = "article"
     video = "video"
     podcast = "podcast"
 
 
-class ContentStatus(str, enum.Enum):
+class ContentStatus(enum.StrEnum):
     new = "new"
     queued = "queued"   # отобран для показа сегодня
     shown = "shown"     # уже показан пользователю

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 from backend.agents.base import BaseAgent
@@ -25,6 +25,9 @@ from backend.core.config import settings
 from backend.integrations.telegram import TelegramNotifier
 from backend.services.task_service import TaskService
 from backend.services.wakeup_planner import WakeupPlanner
+
+if TYPE_CHECKING:
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 

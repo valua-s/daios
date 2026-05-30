@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 import feedparser
 
@@ -25,7 +25,8 @@ class RSSItem:
 class RSSParser(BaseIntegration):
     """Парсит RSS-ленты и возвращает статьи по топику."""
 
-    async def fetch(self, feed_url: str, topic: str, max_items: int = 5) -> list[RSSItem]:
+    @staticmethod
+    async def fetch(feed_url: str, topic: str, max_items: int = 5) -> list[RSSItem]:
         try:
             feed = await asyncio.to_thread(feedparser.parse, feed_url)
         except Exception:
@@ -37,7 +38,7 @@ class RSSParser(BaseIntegration):
             published_at: datetime | None = None
             if hasattr(entry, "published_parsed") and entry.published_parsed:
                 try:
-                    published_at = datetime(*entry.published_parsed[:6])
+                    published_at = datetime(*entry.published_parsed[:6], tzinfo=UTC)
                 except Exception:
                     pass
 

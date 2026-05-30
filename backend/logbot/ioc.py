@@ -1,6 +1,7 @@
 # ruff: noqa: PLR6301
 from __future__ import annotations
 
+import asyncio
 import ssl
 from collections.abc import AsyncIterator
 from typing import Annotated, Literal
@@ -72,7 +73,6 @@ class SslProvider(Provider):
 
     @provide
     async def cafile(self) -> str:
-        import asyncio
         return await asyncio.to_thread(certifi.where)
 
     @provide(cache=False)

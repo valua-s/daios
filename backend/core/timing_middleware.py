@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 
-from litestar.types import ASGIApp, Receive, Scope, Send
+from litestar.types import ASGIApp, Message, Receive, Scope, Send
 
 logger = logging.getLogger("backend.timing")
 
@@ -19,7 +19,7 @@ class TimingMiddleware:
 
         status_holder: dict[str, int] = {"status": 0}
 
-        async def send_wrapper(message) -> None:
+        async def send_wrapper(message: Message) -> None:
             if message["type"] == "http.response.start":
                 status_holder["status"] = message["status"]
             await send(message)

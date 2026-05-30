@@ -58,13 +58,13 @@ class SettingsController(Controller):
     path = "/api/settings"
 
     @get("/interests")
-    async def get_interests(
+    async def get_interests(  # noqa: PLR6301
         self, settings_service: FromDishka[SettingsService]
     ) -> dict[str, bool]:
         return await settings_service.get_interests()
 
     @post("/interests")
-    async def set_interests(
+    async def set_interests(  # noqa: PLR6301
         self,
         data: dict[str, bool],
         settings_service: FromDishka[SettingsService],
@@ -73,7 +73,7 @@ class SettingsController(Controller):
         return await settings_service.get_interests()
 
     @post("/interests/{key:str}")
-    async def add_interest(
+    async def add_interest(  # noqa: PLR6301
         self,
         key: str,
         settings_service: FromDishka[SettingsService],
@@ -84,7 +84,7 @@ class SettingsController(Controller):
         return await settings_service.get_interests()
 
     @delete("/interests/{key:str}", status_code=204)
-    async def delete_interest(
+    async def delete_interest(  # noqa: PLR6301
         self,
         key: str,
         settings_service: FromDishka[SettingsService],
@@ -94,21 +94,21 @@ class SettingsController(Controller):
         await settings_service.delete_interest(key)
 
     @get("/schedules")
-    async def get_schedules(
+    async def get_schedules(  # noqa: PLR6301
         self, settings_service: FromDishka[SettingsService]
     ) -> list[ScheduleResponseDTO]:
         schedules = await settings_service.get_schedules()
         return [_to_response(s) for s in schedules]
 
     @get("/wakeup")
-    async def get_wakeup(
+    async def get_wakeup(  # noqa: PLR6301
         self, settings_service: FromDishka[SettingsService]
     ) -> WakeupResponseDTO:
         t = await settings_service.get_wakeup_base_time()
         return WakeupResponseDTO(base_time=t.strftime("%H:%M"))
 
     @patch("/wakeup")
-    async def update_wakeup(
+    async def update_wakeup(  # noqa: PLR6301
         self,
         data: UpdateWakeupRequest,
         settings_service: FromDishka[SettingsService],
@@ -116,12 +116,12 @@ class SettingsController(Controller):
         try:
             await settings_service.set_wakeup_base_time(data.base_time)
         except ValueError as e:
-            raise ClientException(detail=str(e))
+            raise ClientException(detail=str(e)) from e
         t = await settings_service.get_wakeup_base_time()
         return WakeupResponseDTO(base_time=t.strftime("%H:%M"))
 
     @patch("/schedules/{event_name:str}")
-    async def update_schedule(
+    async def update_schedule(  # noqa: PLR6301
         self,
         event_name: str,
         data: UpdateScheduleRequest,
@@ -129,10 +129,10 @@ class SettingsController(Controller):
     ) -> ScheduleResponseDTO:
         try:
             result = await settings_service.update_schedule(
-                event_name, data.time, data.enabled, data.time_weekend
+                event_name, data.time, enabled=data.enabled, time_weekend=data.time_weekend
             )
         except ValueError as e:
-            raise ClientException(detail=str(e))
+            raise ClientException(detail=str(e)) from e
         if result is None:
             raise NotFoundException(detail=f"Schedule '{event_name}' not found")
         return _to_response(result)

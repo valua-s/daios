@@ -140,14 +140,23 @@ export const getWeekWorkouts = (token?: string) =>
 export const getWeekSummary = (token?: string) =>
   apiFetch<WeekSummaryDTO>('/api/workouts/week/summary', undefined, token)
 
-export const updateCompletedDistance = (
-  completedId: number,
-  distance_km: number | null,
-  token?: string,
-) =>
-  apiFetch<{ status: string }>(`/api/workouts/completed/${completedId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ distance_km }),
+export interface CompleteWorkoutPayload {
+  workout_date: string
+  distance_km?: number
+  duration_minutes?: number
+  activity_type?: 'running' | 'strength' | 'combined'
+  note?: string | null
+}
+
+export const upsertCompletedWorkout = (payload: CompleteWorkoutPayload, token?: string) =>
+  apiFetch<{ id: number }>('/api/workouts/completed', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token)
+
+export const deleteCompletedWorkout = (completedId: number, token?: string) =>
+  apiFetch<void>(`/api/workouts/completed/${completedId}`, {
+    method: 'DELETE',
   }, token)
 
 // ── Settings ───────────────────────────────────────────────────────────────

@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
-from typing import Any
+from datetime import datetime
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 from backend.agents.base import BaseAgent
 from backend.core.config import settings
 from backend.integrations.bus_schedule import BusArrival, BusScheduleParser
 from backend.integrations.weather import WeatherClient, WeatherData
+
+if TYPE_CHECKING:
+    from datetime import date
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 START_WEEKEND_DAY = 5

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from pydantic import BaseModel
@@ -59,9 +59,10 @@ class WeatherClient(BaseIntegration):
         Слоты, не пересекающиеся с интервалом, игнорируются.
         """
         if start.tzinfo is None or end.tzinfo is None:
-            raise ValueError("start/end must be timezone-aware")
-        start_utc = start.astimezone(timezone.utc)
-        end_utc = end.astimezone(timezone.utc)
+            msg = "start/end must be timezone-aware"
+            raise ValueError(msg)
+        start_utc = start.astimezone(UTC)
+        end_utc = end.astimezone(UTC)
 
         response = await self._http.get(
             FORECAST_URL,
@@ -77,8 +78,8 @@ class WeatherClient(BaseIntegration):
 
         for item in data.get("list", []):
             # Каждый слот — окно [dt, dt + 3h)
-            slot_start = datetime.fromtimestamp(item["dt"], tz=timezone.utc)
-            slot_end = datetime.fromtimestamp(item["dt"] + 3 * 3600, tz=timezone.utc)
+            slot_start = datetime.fromtimestamp(item["dt"], tz=UTC)
+            slot_end = datetime.fromtimestamp(item["dt"] + 3 * 3600, tz=UTC)
             if slot_end <= start_utc or slot_start >= end_utc:
                 continue
             mains = {w.get("main") for w in item.get("weather", [])}

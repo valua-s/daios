@@ -97,9 +97,7 @@ class LLMService:
         if not candidates:
             return []
 
-        table_lines = []
-        for c in candidates:
-            table_lines.append(f"{c.id} | {c.type} | {c.topic or '-'} | {c.source or '-'} | {c.title}")
+        table_lines = [f"{c.id} | {c.type} | {c.topic or '-'} | {c.source or '-'} | {c.title}" for c in candidates]
         table = "\n".join(table_lines)
 
         system = SystemMessage(content=(
@@ -107,7 +105,7 @@ class LLMService:
             "You MUST return valid JSON only — no markdown, no explanation, no extra text."
         ))
         human = HumanMessage(content=(
-            f"My current focus: {focus_description}\n\n"
+            f"My current focus: {focus_description}\n\n"  # noqa: S608
             f"Content candidates (id | type | topic | source | title):\n{table}\n\n"
             f"TASK: Select EXACTLY {n} items (no more, no less) for today's digest.\n\n"
             "Selection criteria (in priority order):\n"
@@ -141,7 +139,7 @@ class LLMService:
         return unique[:n]
 
 
-def _extract_json_array(text: str) -> list | None:
+def _extract_json_array(text: object) -> list | None:
     """Извлекает JSON-массив из ответа LLM."""
     if not isinstance(text, str):
         return None

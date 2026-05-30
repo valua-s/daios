@@ -99,12 +99,6 @@ class Settings(BaseSettings):
     admin_password: SecretStr = Field(..., description="Admin password — seeded by migration")
     admin_name: str = Field("Admin", description="Admin display name")
 
-    # Strava
-    strava_client_id: str = Field(..., description="Strava OAuth Client ID")
-    strava_client_secret: SecretStr = Field(..., description="Strava OAuth Client Secret")
-    strava_refresh_token: SecretStr = Field(..., description="Initial Strava refresh token")
-    strava_webhook_verify_token: str = Field(..., description="Verify token for Strava webhook subscription handshake")
-
     # CORS
     allowed_ips: list[AnyHttpUrl] = Field(default_factory=list, description="Your server/public IP for CORS allow_origins")
     container_frontend: str = Field("daios-frontend", description="Frontend container name for CORS")

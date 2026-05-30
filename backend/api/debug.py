@@ -14,14 +14,14 @@ class DebugController(Controller):
     path = "/api/debug"
 
     @get("/focus-resolve")
-    async def focus_resolve(
+    async def focus_resolve(  # noqa: PLR6301
         self, focus_resolver: FromDishka[FocusResolver],
     ) -> dict:
         focus = await focus_resolver.resolve()
         return asdict(focus)
 
     @post("/llm-queries")
-    async def llm_queries(
+    async def llm_queries(  # noqa: PLR6301
         self,
         focus_resolver: FromDishka[FocusResolver],
         llm_service: FromDishka[LLMService],
@@ -35,7 +35,7 @@ class DebugController(Controller):
         }
 
     @post("/llm-select")
-    async def llm_select(
+    async def llm_select(  # noqa: PLR6301
         self,
         focus_resolver: FromDishka[FocusResolver],
         llm_service: FromDishka[LLMService],
@@ -58,7 +58,7 @@ class DebugController(Controller):
         }
 
     @post("/collect-dynamic")
-    async def collect_dynamic(
+    async def collect_dynamic(  # noqa: PLR6301
         self,
         focus_resolver: FromDishka[FocusResolver],
         llm_service: FromDishka[LLMService],
@@ -74,7 +74,7 @@ class DebugController(Controller):
         }
 
     @post("/morning-content")
-    async def morning_content(
+    async def morning_content(  # noqa: PLR6301
         self,
         focus_resolver: FromDishka[FocusResolver],
         llm_service: FromDishka[LLMService],

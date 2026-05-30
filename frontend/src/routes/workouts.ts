@@ -65,7 +65,7 @@ workoutsRouter.get('/', async (c) => {
     <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:28px;">
       <div>
         <h1 style="margin:0; font-size:22px; font-weight:700; color:#e8e8e8;">Тренировки</h1>
-        <div style="font-size:13px; color:#555; margin-top:4px;">План — Google Sheets, факт — Strava</div>
+        <div style="font-size:13px; color:#555; margin-top:4px;">План — Google Sheets, факт — вручную</div>
       </div>
     </div>
 
@@ -84,7 +84,7 @@ workoutsRouter.get('/', async (c) => {
     ${card(`
       ${sectionTitle('Неделя')}
       ${table(['День', 'Тип', 'Описание', 'План', 'Факт', 'Статус'], rows,
-        ['width:50px;', 'width:100px;', '', 'width:90px;', 'width:140px;', 'width:110px;'],
+        ['width:50px;', 'width:100px;', '', 'width:90px;', 'width:200px;', 'width:130px;'],
         ['', 'col-type', '', 'col-duration', 'col-actual', 'col-status']
       )}
     `)}
@@ -96,26 +96,28 @@ workoutsRouter.get('/', async (c) => {
 })
 
 const renderActual = (w: WorkoutDTO): string => {
+  const dateAttr = `data-date="${w.date}"`
+  const typeAttr = `data-type="${w.type === 'rest' ? 'running' : w.type}"`
   if (!w.is_completed || w.completed_workout_id === null) {
-    return '<span style="color:#444;">—</span>'
+    if (w.type === 'rest') return '<span style="color:#444;">—</span>'
+    return `
+      <button class="cw-mark-btn" ${dateAttr} ${typeAttr}
+        style="background:none; border:1px dashed #555; color:#888; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:12px;">
+        + отметить
+      </button>
+    `
   }
-  const km = w.actual_distance_km !== null ? w.actual_distance_km.toFixed(2) : '—'
+  const km = w.actual_distance_km !== null ? w.actual_distance_km.toFixed(2) : '0'
+  const mins = w.actual_duration_minutes ?? 0
   const id = w.completed_workout_id
   return `
     <span class="cw-view" data-id="${id}">
-      <span class="cw-km" style="color:#3a9e6a; font-weight:600;">${km} км</span>
-      <button class="cw-edit-btn" data-id="${id}" data-km="${km}"
+      <span style="color:#3a9e6a; font-weight:600;">${km} км</span>
+      <span style="color:#666; font-size:12px;"> · ${mins} мин</span>
+      <button class="cw-edit-btn" data-id="${id}" data-km="${km}" data-mins="${mins}" ${dateAttr} ${typeAttr}
         style="background:none; border:none; color:#888; cursor:pointer; font-size:13px; margin-left:6px;">✏️</button>
-    </span>
-    <span class="cw-edit" data-id="${id}" style="display:none;">
-      <input type="number" step="0.01" class="cw-input" data-id="${id}" value="${km}"
-        style="width:70px; padding:2px 4px; background:#1a1a1a; color:#e8e8e8; border:1px solid #444; border-radius:3px; font-size:13px;" />
-      <button class="cw-save-btn" data-id="${id}"
-        style="background:#3a9e6a; border:none; color:white; padding:2px 6px; border-radius:3px; cursor:pointer; font-size:12px; margin-left:3px;">✓</button>
-      <button class="cw-reset-btn" data-id="${id}"
-        style="background:none; border:1px solid #555; color:#888; padding:2px 6px; border-radius:3px; cursor:pointer; font-size:12px; margin-left:3px;" title="Сбросить к GPS-значению">↺</button>
-      <button class="cw-cancel-btn" data-id="${id}"
-        style="background:none; border:none; color:#888; cursor:pointer; font-size:13px; margin-left:3px;">✕</button>
+      <button class="cw-del-btn" data-id="${id}"
+        style="background:none; border:none; color:#888; cursor:pointer; font-size:13px;" title="Снять отметку">🗑</button>
     </span>
   `
 }
@@ -155,37 +157,64 @@ const statMini = (label: string, value: string, color: string) =>
 const editScript = () => `
 <script>
 (function() {
-  function toggleEdit(id, editing) {
-    document.querySelectorAll('.cw-view[data-id="' + id + '"]').forEach(el => el.style.display = editing ? 'none' : '')
-    document.querySelectorAll('.cw-edit[data-id="' + id + '"]').forEach(el => el.style.display = editing ? '' : 'none')
-  }
-
-  async function patch(id, distance_km) {
-    const res = await fetch('/api/workouts/completed/' + id, {
-      method: 'PATCH',
+  async function upsert(payload) {
+    const res = await fetch('/api/workouts/completed', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ distance_km }),
+      body: JSON.stringify(payload),
     })
     if (!res.ok) { alert('Ошибка: ' + res.status); return false }
     return true
+  }
+  async function del(id) {
+    const res = await fetch('/api/workouts/completed/' + id, { method: 'DELETE' })
+    if (!res.ok && res.status !== 204) { alert('Ошибка: ' + res.status); return false }
+    return true
+  }
+  function ask(label, def) {
+    const v = prompt(label, def != null ? String(def) : '')
+    if (v === null) return null
+    const n = parseFloat(v.replace(',', '.'))
+    return isNaN(n) || n < 0 ? null : n
   }
 
   document.addEventListener('click', async (e) => {
     const t = e.target
     if (!(t instanceof HTMLElement)) return
-    const id = t.dataset.id
-    if (!id) return
-    if (t.classList.contains('cw-edit-btn')) { toggleEdit(id, true); return }
-    if (t.classList.contains('cw-cancel-btn')) { toggleEdit(id, false); return }
-    if (t.classList.contains('cw-save-btn')) {
-      const inp = document.querySelector('.cw-input[data-id="' + id + '"]')
-      const val = parseFloat(inp.value)
-      if (isNaN(val) || val < 0) { alert('Введите число ≥ 0'); return }
-      if (await patch(id, val)) location.reload()
+
+    if (t.classList.contains('cw-mark-btn')) {
+      const km = ask('Дистанция, км:', '')
+      if (km === null) return
+      const mins = ask('Длительность, мин:', '')
+      if (mins === null) return
+      const ok = await upsert({
+        workout_date: t.dataset.date,
+        activity_type: t.dataset.type,
+        distance_km: km,
+        duration_minutes: Math.round(mins),
+      })
+      if (ok) location.reload()
       return
     }
-    if (t.classList.contains('cw-reset-btn')) {
-      if (await patch(id, null)) location.reload()
+
+    if (t.classList.contains('cw-edit-btn')) {
+      const km = ask('Дистанция, км:', t.dataset.km)
+      if (km === null) return
+      const mins = ask('Длительность, мин:', t.dataset.mins)
+      if (mins === null) return
+      const ok = await upsert({
+        workout_date: t.dataset.date,
+        activity_type: t.dataset.type,
+        distance_km: km,
+        duration_minutes: Math.round(mins),
+      })
+      if (ok) location.reload()
+      return
+    }
+
+    if (t.classList.contains('cw-del-btn')) {
+      if (!confirm('Снять отметку о выполнении?')) return
+      if (await del(t.dataset.id)) location.reload()
       return
     }
   })
