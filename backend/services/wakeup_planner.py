@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
@@ -12,7 +12,6 @@ from backend.services.settings_service import SettingsService
 from backend.services.workout_service import WorkoutPlan, WorkoutService
 
 if TYPE_CHECKING:
-    from datetime import date, time
     from typing import Literal
 
 logger = logging.getLogger(__name__)
