@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from backend.models.base import Base
 
 
-class FocusPeriod(str, enum.Enum):
+class FocusPeriod(enum.StrEnum):
     week = "week"
     month = "month"
 

@@ -30,10 +30,12 @@ class AuthService:
 
     # ── helpers ──────────────────────────────────────────────────────────
 
-    def _hash_password(self, password: str) -> str:
+    @staticmethod
+    def _hash_password(password: str) -> str:
         return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
-    def _verify_password(self, password: str, hashed: str) -> bool:
+    @staticmethod
+    def _verify_password(password: str, hashed: str) -> bool:
         return bcrypt.checkpw(password.encode(), hashed.encode())
 
     def _create_token(self, user_id: int, email: str) -> str:
@@ -53,7 +55,8 @@ class AuthService:
     async def login(self, email: str, password: str) -> AuthResponse:
         user = await self._repo.get_user_by_email(email)
         if not user or not self._verify_password(password, user.hash_password):
-            raise ValueError("Invalid email or password")
+            msg = "Invalid email or password"
+            raise ValueError(msg)
 
         token = self._create_token(user.id, user.email)
         return AuthResponse(
@@ -64,8 +67,8 @@ class AuthService:
     async def forgot_password(self, email: str) -> None:
         user = await self._repo.get_user_by_email(email)
         if not user:
-            raise ValueError("Email not found")
-        # TODO: send recovery email
+            msg = "Email not found"
+            raise ValueError(msg)
         logger.info("Password recovery requested for %s", email)
 
     async def change_password(
@@ -73,9 +76,11 @@ class AuthService:
     ) -> None:
         user = await self._repo.get_user_by_id(user_id)
         if not user:
-            raise ValueError("User not found")
+            msg = "User not found"
+            raise ValueError(msg)
         if not self._verify_password(old_password, user.hash_password):
-            raise ValueError("Old password is incorrect")
+            msg = "Old password is incorrect"
+            raise ValueError(msg)
 
         hashed = self._hash_password(new_password)
         await self._repo.update_password(user.id, hashed)

@@ -19,7 +19,7 @@ class AuthController(Controller):
     path = "/api/auth"
 
     @post("/login")
-    async def login(
+    async def login(  # noqa: PLR6301
         self,
         data: LoginRequest,
         auth_service: FromDishka[AuthService],
@@ -27,10 +27,10 @@ class AuthController(Controller):
         try:
             return await auth_service.login(data.email, data.password)
         except ValueError as e:
-            raise HTTPException(status_code=401, detail=str(e))
+            raise HTTPException(status_code=401, detail=str(e)) from e
 
     @post("/forgot")
-    async def forgot(
+    async def forgot(  # noqa: PLR6301
         self,
         data: ForgotRequest,
         auth_service: FromDishka[AuthService],
@@ -39,10 +39,10 @@ class AuthController(Controller):
             await auth_service.forgot_password(data.email)
             return MessageResponse(ok=True, message="Recovery link sent")
         except ValueError as e:
-            raise HTTPException(status_code=404, detail=str(e))
+            raise HTTPException(status_code=404, detail=str(e)) from e
 
     @post("/change-password", guards=[jwt_auth_guard])
-    async def change_password(
+    async def change_password(  # noqa: PLR6301
         self,
         data: ChangePasswordRequest,
         auth_service: FromDishka[AuthService],
@@ -53,8 +53,8 @@ class AuthController(Controller):
             await auth_service.change_password(user_id, data.old_password, data.new_password)
             return MessageResponse(ok=True, message="Password changed")
         except ValueError as e:
-            raise HTTPException(status_code=401, detail=str(e))
+            raise HTTPException(status_code=401, detail=str(e)) from e
 
     @post("/logout", guards=[jwt_auth_guard])
-    async def logout(self) -> MessageResponse:
+    async def logout(self) -> MessageResponse:  # noqa: PLR6301
         return MessageResponse(ok=True)

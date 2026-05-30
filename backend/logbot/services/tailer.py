@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
 
 from backend.core.config import settings
 from backend.core.logging import LOG_DIR
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 

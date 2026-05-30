@@ -22,7 +22,7 @@ class FocusController(Controller):
     path = "/api/focus"
 
     @get("/")
-    async def get_focus(self, focus_service: FromDishka[FocusService]) -> dict[str, FocusDTO | None]:
+    async def get_focus(self, focus_service: FromDishka[FocusService]) -> dict[str, FocusDTO | None]:  # noqa: PLR6301
         week = await focus_service.get_current_week_focus()
         month = await focus_service.get_current_month_focus()
         return {
@@ -31,7 +31,7 @@ class FocusController(Controller):
         }
 
     @put("/week")
-    async def set_week_focus(
+    async def set_week_focus(  # noqa: PLR6301
         self,
         data: SetFocusRequest,
         focus_service: FromDishka[FocusService],
@@ -40,7 +40,7 @@ class FocusController(Controller):
         return _to_dto(focus)
 
     @put("/month")
-    async def set_month_focus(
+    async def set_month_focus(  # noqa: PLR6301
         self,
         data: SetFocusRequest,
         focus_service: FromDishka[FocusService],

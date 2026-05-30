@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import re
-from datetime import date
+from typing import TYPE_CHECKING
 
 import gspread
 from google.oauth2.service_account import Credentials
 
 from backend.core.config import settings
 from backend.integrations.base import BaseIntegration
+
+if TYPE_CHECKING:
+    from datetime import date
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 WORKSHEET_NAME = "BY GPT"
@@ -29,6 +32,7 @@ STRENGTH_AVG = (STRENGTH_MIN + STRENGTH_MAX) / 2  # 25 мин
 
 class GoogleSheetsClient(BaseIntegration):
     """Читает расписание тренировок из Google Sheets.
+
     Лист "BY GPT": строки — недели (1-16), столбцы — дни недели.
     Первый столбец — номер недели в году.
     """
@@ -43,6 +47,7 @@ class GoogleSheetsClient(BaseIntegration):
 
     async def get_workout_for_date(self, target_date: date) -> dict | None:
         """Возвращает сырые данные тренировки для конкретной даты.
+
         Ищет нужную неделю по номеру ISO-недели года, затем берёт нужный день.
         """
         week_number = target_date.isocalendar().week
@@ -148,6 +153,7 @@ def parse_workout_text(raw: str) -> dict:
 
 def _extract_total_km(text: str) -> float:
     """Суммирует все упоминания километров в строке.
+
     "8 км Z2 + 4×20″ (1:40 бег)" → 8.0
     "Силовая + легкий бег(5км)"   → 5.0
     "12 км: 8 км Z2 + ..."        → берём первое (общее) число

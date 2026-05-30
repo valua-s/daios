@@ -1,9 +1,10 @@
 """Форматирование текстов Telegram-сообщений.
+
 Вынесено из handlers чтобы переиспользовать в scheduler.
 """
 from __future__ import annotations
 
-from datetime import date
+from typing import TYPE_CHECKING
 
 from backend.integrations.bus_schedule import BusArrival
 from backend.integrations.weather import WeatherData
@@ -11,6 +12,9 @@ from backend.models.content import ContentItem, ContentType
 from backend.models.task import Task
 from backend.services.wakeup_planner import WakeupPlan
 from backend.services.workout_service import WorkoutPlan
+
+if TYPE_CHECKING:
+    from datetime import date
 
 
 def format_workout(workout: WorkoutPlan | None) -> str:
@@ -170,8 +174,7 @@ def format_evening_summary(done: list[Task], pending: list[Task]) -> str:
 
     if done:
         lines.append("<b>Сделано:</b>")
-        for task in done:
-            lines.append(f"  ✅ {task.title}")
+        lines.extend(f"  ✅ {task.title}" for task in done)
         lines.append("")
 
     if pending:
@@ -179,7 +182,6 @@ def format_evening_summary(done: list[Task], pending: list[Task]) -> str:
         for task in pending:
             time_str = f" · {task.scheduled_time.strftime('%H:%M')}" if task.scheduled_time else ""
             lines.append(f"  ⏳ {task.title}{time_str}")
-        lines.append("")
-        lines.append("Невыполненные задачи будут перенесены в бэклог в полночь.\nМожешь перенести на завтра, отправить в бэклог или удалить:")
+        lines.extend(("", "Невыполненные задачи будут перенесены в бэклог в полночь.\nМожешь перенести на завтра, отправить в бэклог или удалить:"))
 
     return "\n".join(lines)

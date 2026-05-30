@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, time
-from typing import Any
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 from aiogram import F, Router
@@ -21,6 +21,9 @@ from backend.bot.keyboards import (
 from backend.core.config import settings
 from backend.models.task import TaskStatus
 from backend.services.task_service import TaskService
+
+if TYPE_CHECKING:
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 router = Router(name="tasks")

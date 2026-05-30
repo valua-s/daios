@@ -10,6 +10,9 @@ from pydantic import BaseModel
 from backend.core.config import settings
 from backend.integrations.base import BaseIntegration
 
+_MIN_CELLS_REQUIRED = 3
+_COMMENT_CELL_INDEX = 4
+
 
 class BusArrival(BaseModel):
     route: str
@@ -45,19 +48,19 @@ class BusScheduleParser(BaseIntegration):
 
         for row in rows:
             cells = [td.get_text(strip=True) for td in row.find_all("td")]
-            if len(cells) < 3:
+            if len(cells) < _MIN_CELLS_REQUIRED:
                 continue
 
             time_str = cells[0]
             route = cells[1]
             bus_numbers = cells[2]
-            comment = cells[4] if len(cells) > 4 else ""
+            comment = cells[_COMMENT_CELL_INDEX] if len(cells) > _COMMENT_CELL_INDEX else ""
 
             if not all(word.lower() in route.lower() for word in route_includes):
                 continue
 
             try:
-                parsed_time = datetime.strptime(time_str, "%H:%M").time()
+                parsed_time = datetime.strptime(time_str, "%H:%M").time()  # noqa: DTZ007
             except ValueError:
                 continue
 

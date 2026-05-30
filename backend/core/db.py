@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -9,6 +9,9 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from backend.core.config import settings
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 engine = create_async_engine(
     settings.database_url,

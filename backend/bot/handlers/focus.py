@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING
 
 from aiogram import Router
 from aiogram.filters import Command
@@ -12,6 +12,9 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from dishka.integrations.aiogram import FromDishka, inject
 
 from backend.services.focus_service import FocusService
+
+if TYPE_CHECKING:
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 router = Router(name="focus")

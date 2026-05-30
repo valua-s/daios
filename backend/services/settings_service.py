@@ -17,6 +17,10 @@ from backend.repositories.settings_repo import (
 logger = logging.getLogger(__name__)
 
 _DELETED = "__deleted__"
+_CRON_MIN_PARTS = 2
+_TIME_PARTS = 2
+_HOUR_MAX = 23
+_MINUTE_MAX = 59
 
 DEFAULT_INTERESTS: dict[str, bool] = {
     "python": True,
@@ -62,7 +66,8 @@ _TIME_RE = re.compile(r"^([01]?\d|2[0-3]):([0-5]\d)$")
 def _parse_hhmm(value: str) -> time:
     m = _TIME_RE.match(value.strip())
     if not m:
-        raise ValueError(f"Invalid HH:MM time: {value!r}")
+        msg = f"Invalid HH:MM time: {value!r}"
+        raise ValueError(msg)
     return time(hour=int(m.group(1)), minute=int(m.group(2)))
 
 
@@ -161,11 +166,13 @@ class SettingsService:
         self,
         event_name: str,
         time: str,
+        *,
         enabled: bool,
         time_weekend: str | None = None,
     ) -> ScheduleDTO | None:
         if event_name not in ALLOWED_EVENT_NAMES:
-            raise ValueError(f"Unknown event_name: {event_name!r}")
+            msg = f"Unknown event_name: {event_name!r}"
+            raise ValueError(msg)
         default = next((d for d in DEFAULT_SCHEDULES if d["event_name"] == event_name), None)
         if default is None:
             return None
@@ -202,7 +209,7 @@ class SettingsService:
 def _cron_to_time(cron: str) -> str:
     """'30 6 * * *' → '06:30'. Для мульти-значений ('0 6,17 * * *') берём первое."""
     parts = cron.split()
-    if len(parts) < 2:
+    if len(parts) < _CRON_MIN_PARTS:
         return "00:00"
     minute, hour = parts[0], parts[1].split(",")[0]
     try:
@@ -214,13 +221,16 @@ def _cron_to_time(cron: str) -> str:
 def _time_to_cron(t: str) -> str:
     """'06:30' → '30 6 * * *'."""
     parts = t.split(":")
-    if len(parts) != 2:
-        raise ValueError(f"Invalid time format: {t!r}, expected HH:MM")
+    if len(parts) != _TIME_PARTS:
+        msg = f"Invalid time format: {t!r}, expected HH:MM"
+        raise ValueError(msg)
     h, m = parts
     try:
         hour, minute = int(h), int(m)
-    except ValueError:
-        raise ValueError(f"Invalid time format: {t!r}, expected HH:MM")
-    if not (0 <= hour <= 23 and 0 <= minute <= 59):
-        raise ValueError(f"Time out of range: {t!r}")
+    except ValueError as e:
+        msg = f"Invalid time format: {t!r}, expected HH:MM"
+        raise ValueError(msg) from e
+    if not (0 <= hour <= _HOUR_MAX and 0 <= minute <= _MINUTE_MAX):
+        msg = f"Time out of range: {t!r}"
+        raise ValueError(msg)
     return f"{minute} {hour} * * *"

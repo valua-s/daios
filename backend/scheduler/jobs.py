@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from dishka import AsyncContainer
 
@@ -12,6 +12,9 @@ from backend.services.focus_resolver import FocusResolver
 from backend.services.llm_service import LLMService
 from backend.services.task_service import TaskService
 from backend.services.workout_service import WorkoutService
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 

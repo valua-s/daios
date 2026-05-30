@@ -1,16 +1,20 @@
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import TYPE_CHECKING
 
 from aiogram import BaseMiddleware
 from aiogram.types import CallbackQuery, Message, TelegramObject
 
 from backend.core.config import settings
 
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+    from typing import Any
+
 
 class OwnerOnlyMiddleware(BaseMiddleware):
     """Отклоняет все сообщения не от владельца.
+
     DAIOS — персональный бот, чужие не нужны.
     """
 

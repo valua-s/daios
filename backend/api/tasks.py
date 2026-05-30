@@ -29,22 +29,22 @@ class TaskController(Controller):
     path = "/api/tasks"
 
     @get("/today")
-    async def get_today(self, task_service: FromDishka[TaskService]) -> list[TaskDTO]:
+    async def get_today(self, task_service: FromDishka[TaskService]) -> list[TaskDTO]:  # noqa: PLR6301
         tasks = await task_service.get_today_tasks()
         return [_to_dto(t) for t in tasks]
 
     @get("/range")
-    async def get_range(
+    async def get_range(  # noqa: PLR6301
         self,
         task_service: FromDishka[TaskService],
-        from_date: date = Parameter(query="from"),
-        to_date: date = Parameter(query="to"),
+        from_date: date = Parameter(query="from"),  # noqa: B008
+        to_date: date = Parameter(query="to"),  # noqa: B008
     ) -> list[TaskDTO]:
         tasks = await task_service.get_tasks_by_range(from_date, to_date)
         return [_to_dto(t) for t in tasks]
 
     @post("/")
-    async def create_task(
+    async def create_task(  # noqa: PLR6301
         self,
         data: CreateTaskRequest,
         task_service: FromDishka[TaskService],
@@ -60,7 +60,7 @@ class TaskController(Controller):
         return _to_dto(task)
 
     @patch("/{task_id:int}")
-    async def update_task(
+    async def update_task(  # noqa: PLR6301
         self,
         task_id: int,
         data: UpdateTaskRequest,
@@ -76,8 +76,8 @@ class TaskController(Controller):
         elif data.scheduled_time is not None:
             try:
                 fields["scheduled_time"] = time.fromisoformat(data.scheduled_time)
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid time format")
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail="Invalid time format") from e
         if data.clear_notes:
             fields["notes"] = None
         elif data.notes is not None:
@@ -90,7 +90,7 @@ class TaskController(Controller):
         return _to_dto(task)
 
     @patch("/{task_id:int}/toggle")
-    async def toggle_task(
+    async def toggle_task(  # noqa: PLR6301
         self,
         task_id: int,
         task_service: FromDishka[TaskService],
@@ -101,7 +101,7 @@ class TaskController(Controller):
         return _to_dto(task)
 
     @post("/{task_id:int}/backlog")
-    async def move_to_backlog(
+    async def move_to_backlog(  # noqa: PLR6301
         self,
         task_id: int,
         task_service: FromDishka[TaskService],
@@ -112,7 +112,7 @@ class TaskController(Controller):
         return {"ok": True}
 
     @post("/{task_id:int}/postpone")
-    async def postpone_task(
+    async def postpone_task(  # noqa: PLR6301
         self,
         task_id: int,
         task_service: FromDishka[TaskService],
@@ -123,7 +123,7 @@ class TaskController(Controller):
         return _to_dto(task)
 
     @delete("/{task_id:int}")
-    async def delete_task(
+    async def delete_task(  # noqa: PLR6301
         self,
         task_id: int,
         task_service: FromDishka[TaskService],

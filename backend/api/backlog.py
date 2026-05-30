@@ -40,12 +40,12 @@ class BacklogController(Controller):
     path = "/api/backlog"
 
     @get("/")
-    async def get_backlog(self, task_service: FromDishka[TaskService]) -> list[BacklogItemDTO]:
+    async def get_backlog(self, task_service: FromDishka[TaskService]) -> list[BacklogItemDTO]:  # noqa: PLR6301
         items = await task_service.get_backlog()
         return [_item_to_dto(i) for i in items]
 
     @post("/")
-    async def create_backlog_item(
+    async def create_backlog_item(  # noqa: PLR6301
         self,
         data: CreateBacklogItemRequest,
         task_service: FromDishka[TaskService],
@@ -58,7 +58,7 @@ class BacklogController(Controller):
         return _item_to_dto(item)
 
     @post("/{item_id:int}/today")
-    async def move_to_today(
+    async def move_to_today(  # noqa: PLR6301
         self,
         item_id: int,
         task_service: FromDishka[TaskService],
@@ -69,7 +69,7 @@ class BacklogController(Controller):
         return _task_to_dto(task)
 
     @delete("/{item_id:int}")
-    async def delete_item(
+    async def delete_item(  # noqa: PLR6301
         self,
         item_id: int,
         task_service: FromDishka[TaskService],

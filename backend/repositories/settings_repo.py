@@ -46,6 +46,7 @@ class ScheduleRepository:
         self,
         event_name: str,
         cron_expr: str,
+        *,
         enabled: bool,
         description: str,
         cron_expr_weekend: str | None = None,

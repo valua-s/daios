@@ -3,7 +3,8 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -11,6 +12,14 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.config import settings
+from backend.integrations.google_sheets import (
+    GoogleSheetsClient,
+    parse_workout_text,
+)
+from backend.models.workout_cache import WorkoutCache
+
+if TYPE_CHECKING:
+    from datetime import date
 
 _tz = ZoneInfo(settings.app_timezone)
 
@@ -18,12 +27,6 @@ _tz = ZoneInfo(settings.app_timezone)
 def _today() -> date:
     return datetime.now(_tz).date()
 
-
-from backend.integrations.google_sheets import (
-    GoogleSheetsClient,
-    parse_workout_text,
-)
-from backend.models.workout_cache import WorkoutCache
 
 logger = logging.getLogger(__name__)
 

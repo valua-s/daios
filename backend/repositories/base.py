@@ -1,17 +1,21 @@
 from __future__ import annotations
 
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.base import Base
 
+if TYPE_CHECKING:
+    from typing import Any
+
 ModelT = TypeVar("ModelT", bound=Base)
 
 
-class BaseRepository(Generic[ModelT]):
+class BaseRepository[ModelT: Base]:
     """Типовые CRUD-операции для любой модели.
+
     Наследники добавляют только специфичные методы.
     """
 

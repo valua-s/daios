@@ -39,12 +39,12 @@ class NotesController(Controller):
     path = "/api/notes"
 
     @get("/")
-    async def list_notes(self, note_service: FromDishka[NoteService]) -> list[NoteDTO]:
+    async def list_notes(self, note_service: FromDishka[NoteService]) -> list[NoteDTO]:  # noqa: PLR6301
         notes = await note_service.list_notes()
         return [_note_to_dto(n) for n in notes]
 
     @post("/")
-    async def create_note(
+    async def create_note(  # noqa: PLR6301
         self,
         data: CreateNoteRequest,
         note_service: FromDishka[NoteService],
@@ -53,7 +53,7 @@ class NotesController(Controller):
         return _note_to_dto(note)
 
     @get("/{note_id:int}")
-    async def get_note(
+    async def get_note(  # noqa: PLR6301
         self,
         note_id: int,
         note_service: FromDishka[NoteService],
@@ -64,7 +64,7 @@ class NotesController(Controller):
         return _note_to_dto(note)
 
     @patch("/{note_id:int}")
-    async def update_note(
+    async def update_note(  # noqa: PLR6301
         self,
         note_id: int,
         data: UpdateNoteRequest,
@@ -81,7 +81,7 @@ class NotesController(Controller):
         return _note_to_dto(note)
 
     @delete("/{note_id:int}")
-    async def delete_note(
+    async def delete_note(  # noqa: PLR6301
         self,
         note_id: int,
         note_service: FromDishka[NoteService],
@@ -91,7 +91,7 @@ class NotesController(Controller):
             raise NotFoundException(detail=f"Note {note_id} not found")
 
     @post("/{note_id:int}/items")
-    async def add_item(
+    async def add_item(  # noqa: PLR6301
         self,
         note_id: int,
         data: CreateNoteItemRequest,
@@ -103,7 +103,7 @@ class NotesController(Controller):
         return _item_to_dto(item)
 
     @patch("/items/{item_id:int}")
-    async def update_item(
+    async def update_item(  # noqa: PLR6301
         self,
         item_id: int,
         data: UpdateNoteItemRequest,
@@ -117,7 +117,7 @@ class NotesController(Controller):
         return _item_to_dto(item)
 
     @post("/items/{item_id:int}/toggle")
-    async def toggle_item(
+    async def toggle_item(  # noqa: PLR6301
         self,
         item_id: int,
         note_service: FromDishka[NoteService],
@@ -128,7 +128,7 @@ class NotesController(Controller):
         return _item_to_dto(item)
 
     @delete("/items/{item_id:int}")
-    async def delete_item(
+    async def delete_item(  # noqa: PLR6301
         self,
         item_id: int,
         note_service: FromDishka[NoteService],
