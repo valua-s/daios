@@ -123,7 +123,7 @@ const renderActual = (w: WorkoutDTO): string => {
 }
 
 const renderStatus = (w: WorkoutDTO): string => {
-  if (w.is_completed) return badge('✅ Выполнено', '#3a9e6a')
+  if (w.is_completed) return badge('Выполнено', '#3a9e6a')
   if (w.is_today) return badge('Сегодня', '#7c6aff')
   if (new Date(w.date) < new Date()) return badge('Пропущено', '#d97706')
   return badge('Впереди', '#555')
