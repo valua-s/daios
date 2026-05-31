@@ -52,8 +52,8 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr = Field(..., description="OpenRouter API key")
     openai_base_url: str = "https://openrouter.ai/api/v1"
 
-    model_default: str = "mistralai/mistral-7b-instruct-v0.1"
-    model_orchestrator: str | None = None
+    model_default: str = "openrouter/owl-alpha"
+    model_orchestrator: str | None = "poolside/laguna-m.1:free"
     model_agents: str | None = None
     model_summary: str | None = None
 
