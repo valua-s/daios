@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, time
+from datetime import date, datetime, time
 
 from pydantic import BaseModel
 
@@ -106,3 +106,17 @@ class UpdateNoteItemRequest(BaseModel):
     model_config = {"from_attributes": True}
     text: str | None = None
     checked: bool | None = None
+
+
+@dataclass
+class DiaryEntryDTO:
+    id: int
+    kind: str
+    content: str
+    created_at: datetime
+
+
+@dataclass
+class CreateDiaryEntryRequest:
+    content: str
+    kind: str = "text"

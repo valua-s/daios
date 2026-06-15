@@ -6,6 +6,7 @@ from backend.models.backlog import BacklogItem
 from backend.models.base import Base
 from backend.models.completed_workout import CompletedWorkout
 from backend.models.content import ContentItem
+from backend.models.diary import DiaryEntry
 from backend.models.focus import Focus
 from backend.models.note import Note, NoteItem
 from backend.models.schedule import Schedule
@@ -18,6 +19,7 @@ __all__ = [
     "Base",
     "CompletedWorkout",
     "ContentItem",
+    "DiaryEntry",
     "Focus",
     "Note",
     "NoteItem",

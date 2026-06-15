@@ -33,6 +33,7 @@ from backend.repositories.focus_repo import FocusRepository
 from backend.repositories.note_repo import NoteItemRepository, NoteRepository
 from backend.repositories.task_repo import TaskRepository
 from backend.services.content_service import ContentService
+from backend.services.diary_service import DiaryService
 from backend.services.focus_resolver import FocusResolver
 from backend.services.focus_service import FocusService
 from backend.services.llm_service import LLMService
@@ -140,6 +141,10 @@ class AppProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def get_note_service(self, session: AsyncSession) -> NoteService:  # noqa: PLR6301
         return NoteService(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_diary_service(self, session: AsyncSession) -> DiaryService:  # noqa: PLR6301
+        return DiaryService(session)
 
     @provide(scope=Scope.REQUEST)
     def get_focus_service(self, session: AsyncSession) -> FocusService:  # noqa: PLR6301

@@ -10,6 +10,7 @@ from litestar.config.cors import CORSConfig
 
 from backend.api.backlog import BacklogController
 from backend.api.debug import DebugController
+from backend.api.diary import DiaryController
 from backend.api.focus import FocusController
 from backend.api.notes import NotesController
 from backend.api.settings import SettingsController
@@ -34,7 +35,7 @@ async def _main() -> None:
     protected_router = DishkaRouter(
         path="",
         guards=[jwt_auth_guard],
-        route_handlers=[TaskController, BacklogController, FocusController, WorkoutController, SettingsController, NotesController, DebugController],
+        route_handlers=[TaskController, BacklogController, FocusController, WorkoutController, SettingsController, NotesController, DiaryController, DebugController],
     )
     auth_router = DishkaRouter(
         path="",
