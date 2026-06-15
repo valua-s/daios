@@ -36,6 +36,7 @@ export const baseLayout = (title: string, content: string, activePage: string) =
       ${navItem('/workouts', '🏋️', 'Тренировки', activePage === 'workouts')}
       ${navItem('/focus', '🎯', 'Фокус', activePage === 'focus')}
       ${navItem('/notes', '📝', 'Заметки', activePage === 'notes')}
+      ${navItem('/diary', '📔', 'Дневник', activePage === 'diary')}
       ${navItem('/settings', '⚙️', 'Настройки', activePage === 'settings')}
 
       <div style="margin-top:auto; padding:16px 20px; border-top:1px solid #2a2a2a;">

@@ -274,3 +274,15 @@ export const toggleNoteItem = (id: number, token?: string) =>
 
 export const deleteNoteItem = (id: number, token?: string) =>
   apiFetch<void>(`/api/notes/items/${id}`, { method: 'DELETE' }, token)
+
+// ── Diary ────────────────────────────────────────────────────────────────────
+
+export interface DiaryEntryDTO {
+  id: number
+  kind: string
+  content: string
+  created_at: string
+}
+
+export const getDiaryEntries = (token?: string) =>
+  apiFetch<DiaryEntryDTO[]>('/api/diary/', undefined, token)
