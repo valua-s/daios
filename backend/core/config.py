@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     # Google Sheets
     google_credentials_file: str = "secrets/credentials.json"
     google_sheets_workout_id: str = Field(..., description="Spreadsheet ID from URL")
+    google_sheets_worksheet: str = Field("Triatlon", description="Название листа (вкладки) с тренировками")
 
     # OpenWeatherMap
     openweather_api_key: str = Field(..., description="OpenWeatherMap API key")

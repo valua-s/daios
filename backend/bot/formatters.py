@@ -17,41 +17,55 @@ if TYPE_CHECKING:
     from datetime import date
 
 
+_DISCIPLINE_ICONS = {
+    "running": "🏃",
+    "cycling": "🚴",
+    "swimming": "🏊",
+    "strength": "💪",
+}
+
+_DISCIPLINE_LABELS = {
+    "running": "Бег",
+    "cycling": "Велосипед",
+    "swimming": "Плавание",
+    "strength": "Силовая",
+}
+
+
+def _segment_line(segment: dict) -> str:
+    discipline = segment.get("discipline", "")
+    icon = _DISCIPLINE_ICONS.get(discipline, "•")
+    label = _DISCIPLINE_LABELS.get(discipline, "Тренировка")
+    if segment.get("distance_km"):
+        label = f"{label} {segment['distance_km']:g} км"
+    elif segment.get("distance_m"):
+        label = f"{label} {segment['distance_m']:g} м"
+    elif segment.get("label"):
+        label = f"{label} · {segment['label']}"
+    minutes = segment.get("minutes")
+    tail = f" · ~{minutes} мин" if minutes else ""
+    return f"  {icon} {label}{tail}"
+
+
 def format_workout(workout: WorkoutPlan | None) -> str:
     if workout is None or workout.type == "rest":
         desc = workout.description if workout else "День отдыха"
         return f"🛌 {desc}"
 
-    d = workout.details
-    pace = d.get("pace_range", "6:00–6:30 мин/км")
+    segments = workout.details.get("segments") or []
+    if not segments:
+        return f"💪 <b>Тренировка</b>\n{workout.description}"
 
-    if workout.type == "running":
-        km = d.get("total_km", "?")
-        return (
-            f"🏃 <b>Бег {km} км</b>\n"
-            f"⏱ ~{workout.duration_minutes} мин · {pace}\n"
-            f"📝 {workout.description}"
-        )
-
-    if workout.type == "strength":
-        return (
-            f"💪 <b>Силовая</b>\n"
-            f"⏱ ~{workout.duration_minutes} мин\n"
-            f"📝 {workout.description}"
-        )
-
-    if workout.type == "combined":
-        km = d.get("total_km", "?")
-        run_min = d.get("run_minutes", 0)
-        str_min = d.get("strength_minutes", 0)
-        return (
-            f"🏋️🏃 <b>Силовая + бег {km} км</b>\n"
-            f"⏱ ~{workout.duration_minutes} мин "
-            f"(силовая {str_min} + бег {run_min})\n"
-            f"📝 {workout.description}"
-        )
-
-    return f"💪 <b>Тренировка</b>\n{workout.description}"
+    disciplines = list(dict.fromkeys(s["discipline"] for s in segments))
+    icons = "".join(_DISCIPLINE_ICONS.get(d, "") for d in disciplines)
+    title = " + ".join(_DISCIPLINE_LABELS.get(d, "Тренировка") for d in disciplines)
+    lines = [
+        f"{icons} <b>{title}</b>",
+        f"⏱ ~{workout.duration_minutes} мин",
+        *[_segment_line(s) for s in segments],
+        f"📝 {workout.description}",
+    ]
+    return "\n".join(lines)
 
 
 def format_content_items(items: list[ContentItem]) -> str:
@@ -142,15 +156,14 @@ def format_evening_brief(
     return "\n".join(lines)
 
 
-_WORKOUT_ICONS = {
-    "running": "🏃",
-    "strength": "💪",
-    "combined": "🏋️🏃",
-}
+def _workout_icon(workout: WorkoutPlan) -> str:
+    disciplines = workout.details.get("disciplines") or [workout.type]
+    icons = "".join(_DISCIPLINE_ICONS.get(d, "") for d in disciplines)
+    return icons or "💪"
 
 
 def format_wakeup_plan(plan: WakeupPlan) -> str:
-    icon = _WORKOUT_ICONS.get(plan.workout.type, "💪")
+    icon = _workout_icon(plan.workout)
     when_ru = "утром" if plan.when == "morning" else "вечером"
     alarm = plan.alarm_time.strftime("%H:%M")
     rain_note = ""
