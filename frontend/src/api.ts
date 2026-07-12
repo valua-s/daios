@@ -117,7 +117,7 @@ export const setMonthFocus = (description: string, token?: string) =>
 export interface WorkoutDTO {
   day: string
   date: string
-  type: 'running' | 'strength' | 'combined' | 'rest'
+  type: 'running' | 'cycling' | 'swimming' | 'strength' | 'combined' | 'rest'
   description: string
   duration_minutes: number
   is_today: boolean
@@ -144,7 +144,7 @@ export interface CompleteWorkoutPayload {
   workout_date: string
   distance_km?: number
   duration_minutes?: number
-  activity_type?: 'running' | 'strength' | 'combined'
+  activity_type?: 'running' | 'cycling' | 'swimming' | 'strength' | 'combined'
   note?: string | null
 }
 

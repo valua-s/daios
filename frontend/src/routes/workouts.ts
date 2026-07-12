@@ -9,6 +9,8 @@ export const workoutsRouter = new Hono()
 
 const TYPE_LABELS: Record<WorkoutDTO['type'], string> = {
   running:  'Бег',
+  cycling:  'Велосипед',
+  swimming: 'Плавание',
   strength: 'Силовая',
   combined: 'Комбо',
   rest:     'Отдых',
@@ -16,9 +18,20 @@ const TYPE_LABELS: Record<WorkoutDTO['type'], string> = {
 
 const TYPE_COLORS: Record<WorkoutDTO['type'], string> = {
   running:  '#7c6aff',
+  cycling:  '#2f9e9e',
+  swimming: '#3a7bd5',
   strength: '#d97706',
   combined: '#3a9e6a',
   rest:     '#333',
+}
+
+const TYPE_ICONS: Record<WorkoutDTO['type'], string> = {
+  running:  '🏃',
+  cycling:  '🚴',
+  swimming: '🏊',
+  strength: '💪',
+  combined: '🏋️',
+  rest:     '🛌',
 }
 
 workoutsRouter.get('/', async (c) => {
@@ -50,7 +63,7 @@ workoutsRouter.get('/', async (c) => {
 
   const todayCard = todayWorkout && todayWorkout.type !== 'rest' ? card(`
     <div style="display:flex; align-items:center; gap:16px;">
-      <div style="font-size:36px;">${todayWorkout.type === 'running' ? '🏃' : todayWorkout.type === 'strength' ? '💪' : '🏋️'}</div>
+      <div style="font-size:36px;">${TYPE_ICONS[todayWorkout.type]}</div>
       <div>
         <div style="font-size:11px; color:#7c6aff; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Тренировка сегодня</div>
         <div style="font-size:16px; font-weight:600; color:#e8e8e8;">${todayWorkout.description}</div>

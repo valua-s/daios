@@ -98,8 +98,8 @@ class WorkoutController(Controller):
         for i in range(7):
             d = monday + timedelta(days=i)
             plan = await workout_service.get_workout_for_date(d)
-            if plan and plan.type in {"running", "combined"}:
-                planned_km += float(plan.details.get("total_km", 0) or 0)
+            if plan:
+                planned_km += float(plan.details.get("run_km", plan.details.get("total_km", 0)) or 0)
 
         records = await completed_repo.get_week(monday, sunday)
         actual = round(sum(r.distance_km for r in records if r.activity_type in {"running", "combined"}), 2)

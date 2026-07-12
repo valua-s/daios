@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class WorkoutPlan:
-    type: str            # "running" | "strength" | "combined" | "rest"
+    type: str            # "running" | "cycling" | "swimming" | "strength" | "combined" | "rest"
     description: str
     duration_minutes: int
     details: dict
