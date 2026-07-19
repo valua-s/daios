@@ -18,6 +18,7 @@ const app = new Hono()
 
 const cssCache = readFileSync(join(import.meta.dir, '../public/style.css'), 'utf8')
 const manifestCache = readFileSync(join(import.meta.dir, '../public/manifest.json'), 'utf8')
+const faviconCache = readFileSync(join(import.meta.dir, '../public/favicon.png'))
 
 app.get('/style.css', (c) => {
   return c.text(cssCache, 200, { 'Content-Type': 'text/css' })
@@ -25,6 +26,10 @@ app.get('/style.css', (c) => {
 
 app.get('/manifest.json', (c) => {
   return c.text(manifestCache, 200, { 'Content-Type': 'application/json' })
+})
+
+app.get('/favicon.png', (c) => {
+  return c.body(faviconCache, 200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=604800' })
 })
 
 const SESSION_COOKIE = 'daios_session'
@@ -60,7 +65,7 @@ app.route('/auth', authRouter)
 // Auth middleware — protect everything except /auth/*, static assets, /api/*
 app.use('*', async (c, next) => {
   const path = c.req.path
-  if (path.startsWith('/auth') || path === '/style.css' || path === '/manifest.json' || path.startsWith('/api/')) {
+  if (path.startsWith('/auth') || path === '/style.css' || path === '/manifest.json' || path === '/favicon.png' || path.startsWith('/api/')) {
     return next()
   }
   const token = getCookie(c, SESSION_COOKIE)
