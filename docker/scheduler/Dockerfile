@@ -1,9 +1,9 @@
-FROM python:3.14-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libpq-dev curl wget \
+    curl wget \
     && wget -q https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
        -O /usr/local/bin/wait-for-it \
     && chmod +x /usr/local/bin/wait-for-it \
@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 COPY pyproject.toml .
-RUN uv pip install --system --no-cache -e ".[dev]"
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system -e ".[dev]"
 
 COPY . .
 
