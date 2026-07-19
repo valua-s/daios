@@ -4,8 +4,10 @@ ENV ?= .env
 INFRA    = docker compose -f infra.docker-compose.yml    --env-file $(ENV)
 BACKEND  = docker compose -f backend.docker-compose.yml  --env-file $(ENV)
 FRONTEND = docker compose -f frontend.docker-compose.yml --env-file $(ENV)
+BASE     = docker compose -f base.docker-compose.yml     --env-file $(ENV)
 
 .PHONY: \
+  base \
   infra-up infra-down \
   backend-up backend-down \
   frontend-up frontend-down \
@@ -24,12 +26,17 @@ infra-up:
 infra-down:
 	$(INFRA) down
 
+# ── Общий базовый образ ─────────────────────────────────────────────────
+
+base:
+	$(BASE) build
+
 # ── Бэкенд ──────────────────────────────────────────────────────────────
 
-backend-up:
+backend-up: base
 	$(BACKEND) up -d
 
-back-rebuild:
+back-rebuild: base
 	$(BACKEND) up --build -d
 
 backend-down:
@@ -45,16 +52,16 @@ frontend-down:
 
 # ── Перезапуск отдельных сервисов ───────────────────────────────────────
 
-restart-api:
+restart-api: base
 	$(BACKEND) up -d --build api
 
-restart-bot:
+restart-bot: base
 	$(BACKEND) up -d --build bot
 
-restart-scheduler:
+restart-scheduler: base
 	$(BACKEND) up -d --build scheduler
 
-restart-logbot:
+restart-logbot: base
 	$(BACKEND) up -d --build logbot
 
 restart-front:
