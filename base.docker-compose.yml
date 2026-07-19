@@ -1,0 +1,6 @@
+services:
+  base:
+    image: daios-base:latest
+    build:
+      context: .
+      dockerfile: docker/base/Dockerfile

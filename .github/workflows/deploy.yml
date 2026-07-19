@@ -23,9 +23,12 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
+              - 'docker/base/**'
               - 'docker/api/**'
               - 'docker/bot/**'
               - 'docker/scheduler/**'
+              - 'docker/logbot/**'
+              - 'base.docker-compose.yml'
               - 'backend.docker-compose.yml'
               - 'pyproject.toml'
               - 'uv.lock'
