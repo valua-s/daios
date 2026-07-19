@@ -24,3 +24,4 @@ export const authLayout = (title: string, content: string) => `
 </body>
 </html>
 `
+
