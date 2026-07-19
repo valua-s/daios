@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Зависимости — отдельным слоем для кэша
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile
 
 COPY . .
 
