@@ -12,7 +12,7 @@ diaryRouter.get('/', async (c) => {
   try {
     entries = await getDiaryEntries(token)
   } catch (e: any) {
-    return c.html(baseLayout('Дневник', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'diary'))
+    return c.html(baseLayout('Diary', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'diary'))
   }
 
   const esc = (s: string | null) =>
@@ -20,11 +20,11 @@ diaryRouter.get('/', async (c) => {
 
   const dayLabel = (iso: string) => {
     const d = new Date(iso)
-    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
   }
   const timeLabel = (iso: string) => {
     const d = new Date(iso)
-    return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
   }
 
   const entryCard = (e: typeof entries[number]) => `
@@ -38,7 +38,7 @@ diaryRouter.get('/', async (c) => {
 
   let feed: string
   if (entries.length === 0) {
-    feed = `<div style="padding:48px; text-align:center; color:#555;">Записей пока нет — поделитесь мыслями голосом или текстом</div>`
+    feed = `<div style="padding:48px; text-align:center; color:#555;">No entries yet — share your thoughts by voice or text</div>`
   } else {
     const groups: string[] = []
     let lastDay = ''
@@ -55,7 +55,7 @@ diaryRouter.get('/', async (c) => {
 
   const composer = `
     <div style="background:#181818; border:1px solid #2a2a2a; border-radius:12px; padding:18px; margin-bottom:24px; display:flex; flex-direction:column; gap:12px;">
-      <textarea id="d-text" rows="3" placeholder="Что у вас на душе?..." style="
+      <textarea id="d-text" rows="3" placeholder="What is on your mind?..." style="
         width:100%; box-sizing:border-box; background:#111; border:1px solid #2a2a2a; border-radius:8px;
         color:#e8e8e8; font-size:14px; padding:12px; outline:none; font-family:inherit; resize:vertical;
       " onfocus="this.style.borderColor='#7c6aff'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
@@ -64,13 +64,13 @@ diaryRouter.get('/', async (c) => {
           <button id="d-rec-btn" onclick="toggleDictation()" style="
             display:flex; align-items:center; gap:8px; padding:9px 16px; border-radius:8px; font-size:13px;
             background:#2a2a2a; color:#e8e8e8; border:1px solid #333; cursor:pointer;
-          "><span id="d-rec-dot" style="width:10px; height:10px; border-radius:50%; background:#e05252; display:inline-block;"></span><span id="d-rec-label">Голосовой ввод</span></button>
+          "><span id="d-rec-dot" style="width:10px; height:10px; border-radius:50%; background:#e05252; display:inline-block;"></span><span id="d-rec-label">Voice input</span></button>
           <span id="d-rec-status" style="font-size:12px; color:#888;"></span>
         </div>
         <button id="d-save-btn" onclick="saveEntry()" style="
           padding:9px 18px; border-radius:8px; font-size:13px; font-weight:500;
           background:#7c6aff; color:#fff; border:none; cursor:pointer;
-        ">Записать</button>
+        ">Record</button>
       </div>
     </div>`
 
@@ -96,8 +96,8 @@ diaryRouter.get('/', async (c) => {
           if (!r.ok) throw new Error(r.status);
           window.location.reload();
         }).catch(function(err){
-          btn.disabled = false; btn.textContent = 'Записать';
-          alert('Ошибка: ' + err.message);
+          btn.disabled = false; btn.textContent = 'Record';
+          alert('Error: ' + err.message);
         });
       }
 
@@ -105,7 +105,7 @@ diaryRouter.get('/', async (c) => {
         if (listening) { stopDictation(); return; }
         var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) {
-          alert('Голосовой ввод не поддерживается в этом браузере (нужен Chrome или Edge)');
+          alert('Voice input is not supported in this browser (use Chrome or Edge)');
           return;
         }
         recognition = new SR();
@@ -128,18 +128,18 @@ diaryRouter.get('/', async (c) => {
           ta.value = baseText + finalText + interim;
         };
         recognition.onerror = function(ev){
-          document.getElementById('d-rec-status').textContent = ev.error === 'no-speech' ? 'Ничего не услышал' : 'Ошибка: ' + ev.error;
+          document.getElementById('d-rec-status').textContent = ev.error === 'no-speech' ? 'Nothing heard' : 'Error: ' + ev.error;
         };
         recognition.onend = function(){
           if (listening) { try { recognition.start(); return; } catch (e) {} }
           setIdleUI();
         };
 
-        try { recognition.start(); } catch (e) { alert('Не удалось запустить: ' + e.message); return; }
+        try { recognition.start(); } catch (e) { alert('Failed to start: ' + e.message); return; }
         listening = true;
-        document.getElementById('d-rec-label').textContent = 'Остановить';
+        document.getElementById('d-rec-label').textContent = 'Stop';
         document.getElementById('d-rec-dot').style.animation = 'pulse 1s infinite';
-        document.getElementById('d-rec-status').textContent = 'Слушаю...';
+        document.getElementById('d-rec-status').textContent = 'Listening...';
       }
 
       function stopDictation() {
@@ -149,28 +149,28 @@ diaryRouter.get('/', async (c) => {
       }
 
       function setIdleUI() {
-        document.getElementById('d-rec-label').textContent = 'Голосовой ввод';
+        document.getElementById('d-rec-label').textContent = 'Voice input';
         document.getElementById('d-rec-dot').style.animation = '';
         document.getElementById('d-rec-status').textContent = '';
       }
 
       function deleteEntry(id) {
-        if (!confirm('Удалить запись?')) return;
+        if (!confirm('Delete this entry?')) return;
         fetch('/api/diary/' + id, { method: 'DELETE' })
           .then(function(r){ if (!r.ok) throw new Error(r.status); window.location.reload(); })
-          .catch(function(err){ alert('Ошибка: ' + err.message); });
+          .catch(function(err){ alert('Error: ' + err.message); });
       }
     </script>
     <style>@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }</style>`
 
   const content = `
     <div style="margin-bottom:24px;">
-      <h1 style="margin:0; font-size:22px; font-weight:700; color:#e8e8e8;">Дневник</h1>
-      <div style="font-size:13px; color:#555; margin-top:4px;">Переживания и мысли — голосом или текстом</div>
+      <h1 style="margin:0; font-size:22px; font-weight:700; color:#e8e8e8;">Diary</h1>
+      <div style="font-size:13px; color:#555; margin-top:4px;">Feelings and thoughts — by voice or text</div>
     </div>
     ${composer}
     ${feed}
     ${script}`
 
-  return c.html(baseLayout('Дневник', content, 'diary'))
+  return c.html(baseLayout('Diary', content, 'diary'))
 })

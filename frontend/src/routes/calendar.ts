@@ -6,10 +6,10 @@ import { getTasksByRange, type TaskDTO } from '../api'
 export const calendarRouter = new Hono()
 
 const MONTHS = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ]
-const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 function pad(n: number) {
   return n < 10 ? '0' + n : '' + n
@@ -95,7 +95,7 @@ calendarRouter.get('/', async (c) => {
   try {
     tasks = await getTasksByRange(rangeFrom, rangeTo, token)
   } catch (e: any) {
-    return c.html(baseLayout('Календарь', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'calendar'))
+    return c.html(baseLayout('Calendar', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'calendar'))
   }
 
   // group tasks by date
@@ -174,7 +174,7 @@ calendarRouter.get('/', async (c) => {
     <!-- Mobile: week view -->
     <div class="cal-mobile">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
-        <span style="font-size:16px; font-weight:700; color:#e8e8e8;">Неделя</span>
+        <span style="font-size:16px; font-weight:700; color:#e8e8e8;">Week</span>
         <span style="font-size:13px; color:#555;">${weekDates[0].date.slice(5)} — ${weekDates[6].date.slice(5)}</span>
       </div>
 
@@ -213,7 +213,7 @@ calendarRouter.get('/', async (c) => {
 
       function taskListHtml(date) {
         var list = calTasks[date] || [];
-        if (!list.length) return '<div style="color:#444; font-size:13px;">Задач нет</div>';
+        if (!list.length) return '<div style="color:#444; font-size:13px;">No tasks</div>';
         return list.map(function(t) {
           var done = t.status === 'done';
           return '<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #222;">' +
@@ -259,5 +259,5 @@ calendarRouter.get('/', async (c) => {
     </script>
   `
 
-  return c.html(baseLayout('Календарь', content, 'calendar'))
+  return c.html(baseLayout('Calendar', content, 'calendar'))
 })

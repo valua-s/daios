@@ -17,7 +17,7 @@ export async function apiFetch<T>(path: string, options?: RequestInit, token?: s
   } catch (e) {
     const ms = Math.round(performance.now() - t0)
     console.info(`[api] ${method} ${path} -> ERR in ${ms}ms`)
-    throw new Error(`Бэкенд недоступен (${API_URL})`)
+    throw new Error(`Backend unavailable (${API_URL})`)
   }
   const ms = Math.round(performance.now() - t0)
   console.info(`[api] ${method} ${path} -> ${res.status} in ${ms}ms`)
