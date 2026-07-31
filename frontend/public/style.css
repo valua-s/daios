@@ -7,6 +7,7 @@
       "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
+    --spacing: 0.25rem;
     --default-transition-duration: 150ms;
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
@@ -165,11 +166,17 @@
   .static {
     position: static;
   }
+  .start {
+    inset-inline-start: var(--spacing);
+  }
   .block {
     display: block;
   }
   .flex {
     display: flex;
+  }
+  .grid {
+    display: grid;
   }
   .hidden {
     display: none;
@@ -562,6 +569,86 @@ html {
     max-width: 100%;
     box-sizing: border-box;
     min-width: 0;
+  }
+  .note-modal {
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .note-modal-card {
+    max-width: 100% !important;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 16px !important;
+    display: flex;
+    flex-direction: column;
+  }
+  .note-modal-head {
+    flex-shrink: 0;
+  }
+  .note-modal-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .note-modal-foot {
+    flex-shrink: 0;
+    padding-top: 12px;
+    border-top: 1px solid #2a2a2a;
+    background: #181818;
+  }
+  #nc-items {
+    max-height: 35vh;
+    overflow-y: auto;
+  }
+  .note-modal input, .note-modal textarea {
+    font-size: 16px !important;
+  }
+  .note-check {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    flex-shrink: 0;
+    border: 2px solid #3a3a3a;
+    border-radius: 6px;
+    background: #1a1a1a;
+    position: relative;
+  }
+  .note-check:checked {
+    background: #7c6aff;
+    border-color: #7c6aff;
+  }
+  .note-check:checked::after {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 3px;
+    width: 7px;
+    height: 13px;
+    border: solid #fff;
+    border-width: 0 2.5px 2.5px 0;
+    transform: rotate(45deg);
+  }
+  .note-check-mark {
+    font-size: 24px !important;
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .note-item-row {
+    padding: 12px 10px !important;
+    gap: 14px !important;
+  }
+  .note-item-del {
+    font-size: 18px !important;
+    padding: 6px 10px !important;
   }
 }
 @property --tw-rotate-x {

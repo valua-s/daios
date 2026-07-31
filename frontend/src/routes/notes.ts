@@ -55,16 +55,16 @@ notesRouter.get('/', async (c) => {
       </div>`
 
   const createModal = `
-    <div id="note-create-modal" onclick="if(event.target===this)closeCreate()" style="
+    <div id="note-create-modal" class="note-modal" onclick="if(event.target===this)closeCreate()" style="
       display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
       z-index:200; align-items:center; justify-content:center; padding:16px;
     ">
-      <div style="background:#181818; border:1px solid #2a2a2a; border-radius:12px; padding:28px; width:100%; max-width:460px; box-sizing:border-box;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+      <div class="note-modal-card" style="background:#181818; border:1px solid #2a2a2a; border-radius:12px; padding:28px; width:100%; max-width:460px; box-sizing:border-box;">
+        <div class="note-modal-head" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
           <h2 style="margin:0; font-size:16px; font-weight:600; color:#e8e8e8;">New note</h2>
           <button onclick="closeCreate()" style="background:none; border:none; cursor:pointer; color:#555; font-size:20px; line-height:1; padding:2px 6px;">✕</button>
         </div>
-        <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="note-modal-body" style="display:flex; flex-direction:column; gap:16px;">
           <div>
             <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Title *</label>
             <input id="nc-title" required autofocus placeholder="Note title" style="
@@ -90,22 +90,22 @@ notesRouter.get('/', async (c) => {
               <button type="button" onclick="addDraftItem()" style="padding:8px 14px; border-radius:6px; font-size:13px; background:#2a2a2a; color:#e8e8e8; border:1px solid #333; cursor:pointer;">+</button>
             </div>
           </div>
-          <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:4px;">
-            <button type="button" onclick="closeCreate()" style="padding:9px 18px; border-radius:6px; font-size:13px; font-weight:500; background:transparent; color:#666; border:1px solid #2a2a2a; cursor:pointer;">Cancel</button>
-            <button type="button" id="nc-save" onclick="saveCreate()" style="padding:9px 18px; border-radius:6px; font-size:13px; font-weight:500; background:#7c6aff; color:#fff; border:none; cursor:pointer;">Create</button>
-          </div>
+        </div>
+        <div class="note-modal-foot" style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+          <button type="button" onclick="closeCreate()" style="padding:9px 18px; border-radius:6px; font-size:13px; font-weight:500; background:transparent; color:#666; border:1px solid #2a2a2a; cursor:pointer;">Cancel</button>
+          <button type="button" id="nc-save" onclick="saveCreate()" style="padding:9px 18px; border-radius:6px; font-size:13px; font-weight:500; background:#7c6aff; color:#fff; border:none; cursor:pointer;">Create</button>
         </div>
       </div>
     </div>
   `
 
   const detailModal = `
-    <div id="note-detail-modal" onclick="if(event.target===this)closeDetail()" style="
+    <div id="note-detail-modal" class="note-modal" onclick="if(event.target===this)closeDetail()" style="
       display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
       z-index:200; align-items:flex-start; justify-content:center; padding:16px; overflow-y:auto;
     ">
-      <div style="background:#181818; border:1px solid #2a2a2a; border-radius:12px; padding:28px; width:100%; max-width:560px; box-sizing:border-box; margin:32px 0;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:10px;">
+      <div class="note-modal-card" style="background:#181818; border:1px solid #2a2a2a; border-radius:12px; padding:28px; width:100%; max-width:560px; box-sizing:border-box; margin:32px 0;">
+        <div class="note-modal-head" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:10px;">
           <h2 style="margin:0; font-size:16px; font-weight:600; color:#e8e8e8;">Note</h2>
           <div style="display:flex; gap:8px;">
             <button id="nd-edit-btn" onclick="startNoteEdit()" style="background:none; border:1px solid #2a2a2a; cursor:pointer; border-radius:5px; color:#666; font-size:12px; padding:4px 10px;">✎ Edit</button>
@@ -114,6 +114,7 @@ notesRouter.get('/', async (c) => {
           </div>
         </div>
 
+        <div class="note-modal-body">
         <!-- View mode -->
         <div id="nd-view">
           <div id="nd-title" style="font-size:17px; color:#e8e8e8; font-weight:600; margin-bottom:10px; line-height:1.3;"></div>
@@ -141,8 +142,9 @@ notesRouter.get('/', async (c) => {
         <!-- Items -->
         <div style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Checklist</div>
         <div id="nd-items" style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;"></div>
+        </div>
 
-        <div style="display:flex; gap:8px;">
+        <div class="note-modal-foot" style="display:flex; gap:8px;">
           <input id="nd-new-item" placeholder="New item..." onkeydown="if(event.key==='Enter'){event.preventDefault();addItem()}" style="flex:1; box-sizing:border-box; background:#111; border:1px solid #2a2a2a; border-radius:6px; color:#e8e8e8; font-size:13px; padding:8px 12px; outline:none; font-family:inherit;" onfocus="this.style.borderColor='#7c6aff'" onblur="this.style.borderColor='#2a2a2a'"/>
           <button type="button" onclick="addItem()" style="padding:8px 14px; border-radius:6px; font-size:13px; background:#2a2a2a; color:#e8e8e8; border:1px solid #333; cursor:pointer;">+</button>
         </div>
@@ -186,10 +188,10 @@ notesRouter.get('/', async (c) => {
         var box = document.getElementById('nc-items');
         if (!draftItems.length) { box.innerHTML = ''; return; }
         box.innerHTML = draftItems.map(function(t, i){
-          return '<div style="display:flex; gap:10px; align-items:center; padding:6px 8px; background:#111; border-radius:6px;">' +
-            '<span style="color:#555; font-size:13px;">☐</span>' +
+          return '<div class="note-item-row" style="display:flex; gap:10px; align-items:center; padding:6px 8px; background:#111; border-radius:6px;">' +
+            '<span class="note-check-mark" style="color:#555; font-size:13px;">☐</span>' +
             '<span style="flex:1; min-width:0; color:#e8e8e8; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + escAttr(t) + '</span>' +
-            '<button onclick="removeDraftItem(' + i + ')" style="background:none; border:none; cursor:pointer; color:#555; font-size:14px; padding:2px 6px;">✕</button>' +
+            '<button class="note-item-del" onclick="removeDraftItem(' + i + ')" style="background:none; border:none; cursor:pointer; color:#555; font-size:14px; padding:2px 6px;">✕</button>' +
           '</div>';
         }).join('');
       }
@@ -266,10 +268,10 @@ notesRouter.get('/', async (c) => {
         }
         box.innerHTML = items.map(function(i){
           var textStyle = i.checked ? 'color:#555; text-decoration:line-through;' : 'color:#e8e8e8;';
-          return '<div style="display:flex; gap:10px; align-items:center; padding:6px 8px; background:#111; border-radius:6px;">' +
-            '<input type="checkbox" ' + (i.checked ? 'checked' : '') + ' onchange="toggleItem(' + i.id + ')" style="cursor:pointer; accent-color:#7c6aff;"/>' +
-            '<input data-id="' + i.id + '" value="' + escAttr(i.text) + '" onblur="saveItemText(' + i.id + ', this.value)" onkeydown="if(event.key===\\'Enter\\'){this.blur()}" style="flex:1; min-width:0; background:transparent; border:none; font-size:13px; padding:4px 0; outline:none; font-family:inherit; ' + textStyle + '"/>' +
-            '<button onclick="deleteItem(' + i.id + ')" style="background:none; border:none; cursor:pointer; color:#555; font-size:14px; padding:2px 6px;">✕</button>' +
+          return '<div class="note-item-row" style="display:flex; gap:10px; align-items:center; padding:6px 8px; background:#111; border-radius:6px;">' +
+            '<input type="checkbox" class="note-check" ' + (i.checked ? 'checked' : '') + ' onchange="toggleItem(' + i.id + ')" style="cursor:pointer; accent-color:#7c6aff;"/>' +
+            '<input class="note-item-text" data-id="' + i.id + '" value="' + escAttr(i.text) + '" onblur="saveItemText(' + i.id + ', this.value)" onkeydown="if(event.key===\\'Enter\\'){this.blur()}" style="flex:1; min-width:0; background:transparent; border:none; font-size:13px; padding:4px 0; outline:none; font-family:inherit; ' + textStyle + '"/>' +
+            '<button class="note-item-del" onclick="deleteItem(' + i.id + ')" style="background:none; border:none; cursor:pointer; color:#555; font-size:14px; padding:2px 6px;">✕</button>' +
           '</div>';
         }).join('');
       }
