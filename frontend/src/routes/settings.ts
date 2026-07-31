@@ -41,7 +41,7 @@ settingsRouter.post('/wakeup', async (c) => {
     try {
       await updateWakeup(base_time, token)
     } catch (e) {
-      // молча редиректим — валидацию делает HTML input type=time
+      // redirect silently — HTML input type=time already validates
     }
   }
   return c.redirect('/settings')
@@ -73,15 +73,15 @@ settingsRouter.get('/', async (c) => {
       getWakeup(token),
     ])
   } catch (e: any) {
-    return c.html(baseLayout('Настройки', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'settings'))
+    return c.html(baseLayout('Settings', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'settings'))
   }
 
   const INTEREST_LABELS: Record<string, string> = {
-    python: 'Python разработка',
-    ai: 'Искусственный интеллект',
-    running: 'Бег и спорт',
-    economics: 'Экономика',
-    politics: 'Политика',
+    python: 'Python development',
+    ai: 'Artificial intelligence',
+    running: 'Running and sport',
+    economics: 'Economics',
+    politics: 'Politics',
   }
 
   const getLabel = (key: string) =>
@@ -101,7 +101,7 @@ settingsRouter.get('/', async (c) => {
         <span style="font-size:14px; color:#e8e8e8;">${getLabel(key)}</span>
       </label>
       <form method="POST" action="/settings/interests/${key}/delete" style="margin:0;">
-        <button type="submit" title="Удалить" style="
+        <button type="submit" title="Delete" style="
           background:none; border:none; cursor:pointer; color:#555; font-size:16px;
           padding:4px 6px; border-radius:4px; line-height:1;
           transition:color 0.15s;
@@ -111,13 +111,13 @@ settingsRouter.get('/', async (c) => {
   `
 
   const SCHEDULE_LABELS: Record<string, string> = {
-    morning_brief: 'Утренняя сводка',
-    evening_summary: 'Вечерний итог',
-    collect_content: 'Сбор контента',
-    sync_workouts: 'Синхронизация тренировок',
-    evening_brief: 'Вечерняя сводка',
-    midnight_backlog: 'Перенос в бэклог',
-    tasks_reminder: 'Напоминание о задачах',
+    morning_brief: 'Morning brief',
+    evening_summary: 'Evening summary',
+    collect_content: 'Content collection',
+    sync_workouts: 'Workout sync',
+    evening_brief: 'Evening brief',
+    midnight_backlog: 'Move to backlog',
+    tasks_reminder: 'Task reminder',
   }
 
   const interestsForm = `
@@ -129,11 +129,11 @@ settingsRouter.get('/', async (c) => {
       <button type="submit" form="interests-form" style="
         padding:8px 16px; border-radius:6px; font-size:13px;
         background:#7c6aff; color:#fff; border:none; cursor:pointer; font-weight:500;
-      ">Сохранить</button>
+      ">Save</button>
     </div>
     <form method="POST" action="/settings/interests/add"
           style="display:flex; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid #1e1e1e;">
-      <input type="text" name="key" placeholder="Новый интерес..." required
+      <input type="text" name="key" placeholder="New interest..." required
              autocomplete="off" style="
         flex:1; background:#111; border:1px solid #2a2a2a; border-radius:6px;
         color:#e8e8e8; font-size:13px; padding:7px 10px; outline:none; min-width:0;
@@ -142,7 +142,7 @@ settingsRouter.get('/', async (c) => {
         padding:7px 14px; border-radius:6px; font-size:13px;
         background:#1e1e1e; color:#e8e8e8; border:1px solid #2a2a2a; cursor:pointer;
         white-space:nowrap;
-      ">+ Добавить</button>
+      ">+ Add</button>
     </form>
   `
 
@@ -158,11 +158,11 @@ settingsRouter.get('/', async (c) => {
 
   const scheduleRow = (s: typeof schedules[0]) => {
     const cronLine = s.cron_expr_weekend
-      ? `${s.cron_expr} (будни) · ${s.cron_expr_weekend} (выходные)`
+      ? `${s.cron_expr} (weekdays) · ${s.cron_expr_weekend} (weekend)`
       : s.cron_expr
     const inputs = s.supports_weekend
-      ? `${timeInput('time', s.time, 'Будни')}${timeInput('time_weekend', s.time_weekend ?? '', 'Выходные')}`
-      : timeInput('time', s.time, 'Время')
+      ? `${timeInput('time', s.time, 'Weekdays')}${timeInput('time_weekend', s.time_weekend ?? '', 'Weekend')}`
+      : timeInput('time', s.time, 'Time')
     return `
     <form method="POST" action="/settings/schedules/${s.event_name}"
           style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #1e1e1e; flex-wrap:wrap;">
@@ -173,40 +173,40 @@ settingsRouter.get('/', async (c) => {
       ${inputs}
       <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#888; cursor:pointer;">
         <input type="checkbox" name="enabled" ${s.enabled ? 'checked' : ''} style="accent-color:#7c6aff;" />
-        Вкл
+        On
       </label>
       <button type="submit" style="
         padding:6px 14px; border-radius:6px; font-size:13px;
         background:#1e1e1e; color:#e8e8e8; border:1px solid #2a2a2a; cursor:pointer;
-      ">Сохранить</button>
+      ">Save</button>
     </form>
   `
   }
 
   const content = `
     <div style="margin-bottom:28px;">
-      <h1 style="margin:0; font-size:22px; font-weight:700; color:#e8e8e8;">Настройки</h1>
-      <div style="font-size:13px; color:#555; margin-top:4px;">Интересы и расписание задач</div>
+      <h1 style="margin:0; font-size:22px; font-weight:700; color:#e8e8e8;">Settings</h1>
+      <div style="font-size:13px; color:#555; margin-top:4px;">Interests and task schedule</div>
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;" class="settings-grid">
-      ${card(`${sectionTitle('Интересы')}<div style="font-size:12px; color:#555; margin-top:-10px; margin-bottom:14px;">Темы для подборки контента</div>${interestsForm}`)}
-      ${card(`${sectionTitle('Расписание')}<div style="font-size:12px; color:#555; margin-top:-10px; margin-bottom:14px;">Автоматические задачи</div>${schedules.map(scheduleRow).join('')}
+      ${card(`${sectionTitle('Interests')}<div style="font-size:12px; color:#555; margin-top:-10px; margin-bottom:14px;">Topics for content selection</div>${interestsForm}`)}
+      ${card(`${sectionTitle('Schedule')}<div style="font-size:12px; color:#555; margin-top:-10px; margin-bottom:14px;">Automated tasks</div>${schedules.map(scheduleRow).join('')}
         <form method="POST" action="/settings/wakeup"
               style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #1e1e1e; flex-wrap:wrap;">
           <div style="flex:1; min-width:160px;">
-            <div style="font-size:14px; color:#e8e8e8;">Базовое время подъёма</div>
-            <div style="font-size:11px; color:#555; margin-top:2px;">От него считается будильник для тренировки</div>
+            <div style="font-size:14px; color:#e8e8e8;">Base wake-up time</div>
+            <div style="font-size:11px; color:#555; margin-top:2px;">Workout alarm is calculated from it</div>
           </div>
-          ${timeInput('base_time', wakeup.base_time, 'Подъём')}
+          ${timeInput('base_time', wakeup.base_time, 'Wake-up')}
           <button type="submit" style="
             padding:6px 14px; border-radius:6px; font-size:13px;
             background:#1e1e1e; color:#e8e8e8; border:1px solid #2a2a2a; cursor:pointer;
-          ">Сохранить</button>
+          ">Save</button>
         </form>
       `)}
     </div>
   `
 
-  return c.html(baseLayout('Настройки', content, 'settings'))
+  return c.html(baseLayout('Settings', content, 'settings'))
 })

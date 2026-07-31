@@ -56,15 +56,15 @@ todayRouter.post('/new', async (c) => {
 
 todayRouter.get('/', async (c) => {
   const token = getCookie(c, 'daios_session')
-  const today = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })
-  const todayIso = new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD в серверном timezone
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })
+  const todayIso = new Date().toLocaleDateString('sv-SE')
 
   let tasks: Awaited<ReturnType<typeof getTodayTasks>>
   let focus: Awaited<ReturnType<typeof getFocus>>
   try {
     ;[tasks, focus] = await Promise.all([getTodayTasks(token), getFocus(token)])
   } catch (e: any) {
-    return c.html(baseLayout('Сегодня', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'today'))
+    return c.html(baseLayout('Today', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'today'))
   }
 
   const done = tasks.filter(t => t.status === 'done').length
@@ -77,22 +77,22 @@ todayRouter.get('/', async (c) => {
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center; height:100%; align-items:center;">
           <div style="min-width:0;">
             <div style="font-size:28px; font-weight:700; color:#7c6aff;">${done}</div>
-            <div style="font-size:12px; color:#555; margin-top:4px;">Выполнено</div>
+            <div style="font-size:12px; color:#555; margin-top:4px;">Done</div>
           </div>
           <div style="min-width:0;">
             <div style="font-size:28px; font-weight:700; color:#d97706;">${total - done}</div>
-            <div style="font-size:12px; color:#555; margin-top:4px;">Осталось</div>
+            <div style="font-size:12px; color:#555; margin-top:4px;">Left</div>
           </div>
           <div style="min-width:0;">
             <div style="font-size:28px; font-weight:700; color:#3a9e6a;">${pct}%</div>
-            <div style="font-size:12px; color:#555; margin-top:4px;">Прогресс</div>
+            <div style="font-size:12px; color:#555; margin-top:4px;">Progress</div>
           </div>
         </div>
       `)}
     </div>
     <div class="stats-mobile">
       ${card(`
-        <div style="font-size:11px; color:#555; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">Прогресс дня</div>
+        <div style="font-size:11px; color:#555; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">Day progress</div>
         <div style="display:flex; align-items:center; gap:12px;">
           <div style="flex:1; background:#2a2a2a; border-radius:6px; height:8px; overflow:hidden;">
             <div style="width:${pct}%; height:100%; background:#7c6aff; transition:width 0.4s;"></div>
@@ -120,14 +120,14 @@ todayRouter.get('/', async (c) => {
       ? `<span style="color:#666; font-size:13px;">${t.scheduled_time.slice(0, 5)}</span>`
       : `<span style="color:#333;">—</span>`,
     t.status === 'done'
-      ? badge('Готово', '#3a9e6a')
-      : badge('В процессе', '#d97706'),
+      ? badge('Done', '#3a9e6a')
+      : badge('In progress', '#d97706'),
     t.status === 'done'
       ? ''
       : `<div style="display:flex; gap:6px; align-items:center; white-space:nowrap;">
-          <form method="POST" action="/today/${t.id}/done" style="display:inline;"><button type="submit" title="Выполнено" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:12px;background:#2a2a2a;color:#3a9e6a;border:1px solid #333;cursor:pointer;">✓</button></form>
-          <form method="POST" action="/today/${t.id}/backlog" style="display:inline;"><button type="submit" title="В бэклог" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:12px;background:#2a2a2a;color:#666;border:1px solid #333;cursor:pointer;">бэклог ↗</button></form>
-          <form method="POST" action="/today/${t.id}/delete" style="display:inline;"><button type="submit" title="Удалить" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:12px;background:#2a2a2a;color:#e05252;border:1px solid #333;cursor:pointer;">✕</button></form>
+          <form method="POST" action="/today/${t.id}/done" style="display:inline;"><button type="submit" title="Done" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:12px;background:#2a2a2a;color:#3a9e6a;border:1px solid #333;cursor:pointer;">✓</button></form>
+          <form method="POST" action="/today/${t.id}/backlog" style="display:inline;"><button type="submit" title="To backlog" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:12px;background:#2a2a2a;color:#666;border:1px solid #333;cursor:pointer;">backlog ↗</button></form>
+          <form method="POST" action="/today/${t.id}/delete" style="display:inline;"><button type="submit" title="Delete" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:12px;background:#2a2a2a;color:#e05252;border:1px solid #333;cursor:pointer;">✕</button></form>
         </div>`,
   ]})
 
@@ -141,7 +141,7 @@ todayRouter.get('/', async (c) => {
         padding:28px; width:100%; max-width:460px; box-sizing:border-box;
       ">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
-          <h2 style="margin:0; font-size:16px; font-weight:600; color:#e8e8e8;">Новая задача</h2>
+          <h2 style="margin:0; font-size:16px; font-weight:600; color:#e8e8e8;">New task</h2>
           <button onclick="closeModal()" style="
             background:none; border:none; cursor:pointer;
             color:#555; font-size:20px; line-height:1; padding:2px 6px;
@@ -151,8 +151,8 @@ todayRouter.get('/', async (c) => {
         <form method="POST" action="/today/new" style="display:flex; flex-direction:column; gap:16px;">
 
           <div>
-            <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Название *</label>
-            <input name="title" required autofocus placeholder="Что нужно сделать?" style="
+            <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Title *</label>
+            <input name="title" required autofocus placeholder="What needs to be done?" style="
               width:100%; box-sizing:border-box;
               background:#111; border:1px solid #2a2a2a; border-radius:6px;
               color:#e8e8e8; font-size:14px; padding:10px 12px;
@@ -162,7 +162,7 @@ todayRouter.get('/', async (c) => {
 
           <div class="modal-date-grid">
             <div>
-              <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Дата</label>
+              <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Date</label>
               <input name="date" type="date" value="${todayIso}" style="
                 width:100%; box-sizing:border-box;
                 background:#111; border:1px solid #2a2a2a; border-radius:6px;
@@ -171,7 +171,7 @@ todayRouter.get('/', async (c) => {
               " onfocus="this.style.borderColor='#7c6aff'" onblur="this.style.borderColor='#2a2a2a'"/>
             </div>
             <div>
-              <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Время</label>
+              <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Time</label>
               <input name="scheduled_time" type="time" style="
                 width:100%; box-sizing:border-box;
                 background:#111; border:1px solid #2a2a2a; border-radius:6px;
@@ -182,8 +182,8 @@ todayRouter.get('/', async (c) => {
           </div>
 
           <div>
-            <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Заметки</label>
-            <textarea name="notes" rows="2" placeholder="Дополнительный контекст..." style="
+            <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Notes</label>
+            <textarea name="notes" rows="2" placeholder="Additional context..." style="
               width:100%; box-sizing:border-box;
               background:#111; border:1px solid #2a2a2a; border-radius:6px;
               color:#e8e8e8; font-size:14px; padding:10px 12px;
@@ -195,11 +195,11 @@ todayRouter.get('/', async (c) => {
             <button type="button" onclick="closeModal()" style="
               padding:9px 18px; border-radius:6px; font-size:13px; font-weight:500;
               background:transparent; color:#666; border:1px solid #2a2a2a; cursor:pointer;
-            ">Отмена</button>
+            ">Cancel</button>
             <button type="submit" style="
               padding:9px 18px; border-radius:6px; font-size:13px; font-weight:500;
               background:#7c6aff; color:#fff; border:none; cursor:pointer;
-            ">Добавить</button>
+            ">Add</button>
           </div>
         </form>
       </div>
@@ -214,12 +214,12 @@ todayRouter.get('/', async (c) => {
         padding:28px; width:100%; max-width:460px; box-sizing:border-box;
       ">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-          <h2 style="margin:0; font-size:16px; font-weight:600; color:#e8e8e8;">Задача</h2>
+          <h2 style="margin:0; font-size:16px; font-weight:600; color:#e8e8e8;">Task</h2>
           <div style="display:flex; gap:8px; align-items:center;">
             <button id="d-edit-btn" onclick="startEdit()" style="
               background:none; border:1px solid #2a2a2a; cursor:pointer; border-radius:5px;
               color:#666; font-size:12px; padding:4px 10px;
-            ">✎ Изменить</button>
+            ">✎ Edit</button>
             <button onclick="closeDetail()" style="
               background:none; border:none; cursor:pointer;
               color:#555; font-size:20px; line-height:1; padding:2px 6px;
@@ -236,7 +236,7 @@ todayRouter.get('/', async (c) => {
             <span id="d-time" style="font-size:13px; color:#666;"></span>
           </div>
           <div id="d-notes-block">
-            <div style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Заметки</div>
+            <div style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Notes</div>
             <div id="d-notes" style="font-size:13px; line-height:1.6; white-space:pre-wrap; color:#aaa; background:#111; border-radius:6px; padding:10px 12px;"></div>
           </div>
         </div>
@@ -244,7 +244,7 @@ todayRouter.get('/', async (c) => {
         <!-- Edit mode -->
         <div id="d-edit" style="display:none; flex-direction:column; gap:14px;">
           <div>
-            <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Название</label>
+            <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Title</label>
             <input id="d-e-title" style="
               width:100%; box-sizing:border-box;
               background:#111; border:1px solid #2a2a2a; border-radius:6px;
@@ -254,7 +254,7 @@ todayRouter.get('/', async (c) => {
           </div>
           <div class="modal-date-grid">
             <div>
-              <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Дата</label>
+              <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Date</label>
               <input id="d-e-date" type="date" style="
                 width:100%; box-sizing:border-box;
                 background:#111; border:1px solid #2a2a2a; border-radius:6px;
@@ -263,7 +263,7 @@ todayRouter.get('/', async (c) => {
               " onfocus="this.style.borderColor='#7c6aff'" onblur="this.style.borderColor='#2a2a2a'"/>
             </div>
             <div>
-              <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Время</label>
+              <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Time</label>
               <input id="d-e-time" type="time" style="
                 width:100%; box-sizing:border-box;
                 background:#111; border:1px solid #2a2a2a; border-radius:6px;
@@ -273,7 +273,7 @@ todayRouter.get('/', async (c) => {
             </div>
           </div>
           <div>
-            <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Заметки</label>
+            <label style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;">Notes</label>
             <textarea id="d-e-notes" rows="3" style="
               width:100%; box-sizing:border-box;
               background:#111; border:1px solid #2a2a2a; border-radius:6px;
@@ -285,11 +285,11 @@ todayRouter.get('/', async (c) => {
             <button type="button" onclick="cancelEdit()" style="
               padding:9px 18px; border-radius:6px; font-size:13px; font-weight:500;
               background:transparent; color:#666; border:1px solid #2a2a2a; cursor:pointer;
-            ">Отмена</button>
+            ">Cancel</button>
             <button type="button" onclick="saveEdit()" id="d-save-btn" style="
               padding:9px 18px; border-radius:6px; font-size:13px; font-weight:500;
               background:#7c6aff; color:#fff; border:none; cursor:pointer;
-            ">Сохранить</button>
+            ">Save</button>
           </div>
         </div>
       </div>
@@ -316,7 +316,7 @@ todayRouter.get('/', async (c) => {
 
         var statusEl = document.getElementById('d-status');
         var isDone = el.dataset.status === 'done';
-        statusEl.textContent = isDone ? 'Готово' : 'В процессе';
+        statusEl.textContent = isDone ? 'Done' : 'In progress';
         statusEl.style.cssText = 'font-size:11px;padding:3px 8px;border-radius:4px;font-weight:500;' +
           (isDone ? 'background:rgba(58,158,106,0.15);color:#3a9e6a;' : 'background:rgba(217,119,6,0.15);color:#d97706;');
 
@@ -395,8 +395,8 @@ todayRouter.get('/', async (c) => {
           window.location.reload();
         }).catch(function(err) {
           btn.disabled = false;
-          btn.textContent = 'Сохранить';
-          alert('Ошибка сохранения: ' + (err.message || 'неизвестная ошибка'));
+          btn.textContent = 'Save';
+          alert('Save failed: ' + (err.message || 'unknown error'));
         });
       }
 
@@ -408,15 +408,15 @@ todayRouter.get('/', async (c) => {
   `
 
   const tasksBlock = card(`
-    ${sectionTitle('Задачи на сегодня', `
+    ${sectionTitle('Tasks for today', `
       <button onclick="openModal()" style="
         padding:7px 14px; border-radius:6px; font-size:13px;
         background:#7c6aff; color:#fff; border:none; cursor:pointer; font-weight:500;
-      ">+ Добавить</button>
+      ">+ Add</button>
     `)}
     ${total === 0
-      ? `<div style="padding:32px; text-align:center; color:#555;">Задач нет — добавьте первую</div>`
-      : table(['Задача', 'Время', 'Статус', ''], rows, [
+      ? `<div style="padding:32px; text-align:center; color:#555;">No tasks — add your first one</div>`
+      : table(['Task', 'Time', 'Status', ''], rows, [
           '',
           'width:70px;',
           'width:110px;',
@@ -429,16 +429,16 @@ todayRouter.get('/', async (c) => {
     ${modal}
     <div class="today-grid">
       <div class="today-date-card" style="background:#181818; border:1px solid #2a2a2a; border-radius:10px; padding:20px; display:flex; flex-direction:column; justify-content:center;">
-        <h1 style="margin:0; font-size:22px; font-weight:700; color:#e8e8e8;">Сегодня</h1>
+        <h1 style="margin:0; font-size:22px; font-weight:700; color:#e8e8e8;">Today</h1>
         <div style="font-size:13px; color:#555; margin-top:6px; text-transform:capitalize;">${today}</div>
       </div>
       <div style="background:#181818; border:1px solid #2a2a2a; border-radius:10px; padding:20px; display:flex; flex-direction:column; gap:10px;">
         <div>
-          <div style="font-size:11px; color:#555; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Фокус недели</div>
+          <div style="font-size:11px; color:#555; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Week focus</div>
           <div style="font-size:15px; color:#e8e8e8; line-height:1.4;">${focus.week?.description ?? '—'}</div>
         </div>
         <div class="focus-month" style="border-top:1px solid #2a2a2a; padding-top:10px;">
-          <div style="font-size:11px; color:#555; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Фокус месяца</div>
+          <div style="font-size:11px; color:#555; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Month focus</div>
           <div style="font-size:14px; color:#888; line-height:1.4;">${focus.month?.description ?? '—'}</div>
         </div>
       </div>
@@ -448,5 +448,5 @@ todayRouter.get('/', async (c) => {
     ${tasksBlock}
   `
 
-  return c.html(baseLayout('Сегодня', content, 'today'))
+  return c.html(baseLayout('Today', content, 'today'))
 })

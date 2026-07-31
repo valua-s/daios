@@ -8,12 +8,12 @@ import { getWeekWorkouts, getWeekSummary, type WorkoutDTO, type WeekSummaryDTO }
 export const workoutsRouter = new Hono()
 
 const TYPE_LABELS: Record<WorkoutDTO['type'], string> = {
-  running:  'Бег',
-  cycling:  'Велосипед',
-  swimming: 'Плавание',
-  strength: 'Силовая',
-  combined: 'Комбо',
-  rest:     'Отдых',
+  running:  'Running',
+  cycling:  'Cycling',
+  swimming: 'Swimming',
+  strength: 'Strength',
+  combined: 'Combo',
+  rest:     'Rest',
 }
 
 const TYPE_COLORS: Record<WorkoutDTO['type'], string> = {
@@ -44,7 +44,7 @@ workoutsRouter.get('/', async (c) => {
       getWeekSummary(token),
     ])
   } catch (e: any) {
-    return c.html(baseLayout('Тренировки', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'workouts'))
+    return c.html(baseLayout('Workouts', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'workouts'))
   }
 
   const todayWorkout = workouts.find(w => w.is_today)
@@ -56,7 +56,7 @@ workoutsRouter.get('/', async (c) => {
     `<span style="color:${w.is_today ? '#7c6aff' : '#888'}; font-weight:${w.is_today ? '600' : '400'};">${w.day}</span>`,
     badge(TYPE_LABELS[w.type], TYPE_COLORS[w.type]),
     `<span style="color:${w.type === 'rest' ? '#444' : '#888'}; font-size:13px;">${w.description}</span>`,
-    w.duration_minutes ? `<span style="color:#666; font-size:13px;">${w.duration_minutes} мин</span>` : '—',
+    w.duration_minutes ? `<span style="color:#666; font-size:13px;">${w.duration_minutes} min</span>` : '—',
     renderActual(w),
     renderStatus(w),
   ])
@@ -65,9 +65,9 @@ workoutsRouter.get('/', async (c) => {
     <div style="display:flex; align-items:center; gap:16px;">
       <div style="font-size:36px;">${TYPE_ICONS[todayWorkout.type]}</div>
       <div>
-        <div style="font-size:11px; color:#7c6aff; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Тренировка сегодня</div>
+        <div style="font-size:11px; color:#7c6aff; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Today's workout</div>
         <div style="font-size:16px; font-weight:600; color:#e8e8e8;">${todayWorkout.description}</div>
-        ${todayWorkout.duration_minutes ? `<div style="font-size:13px; color:#666; margin-top:4px;">${todayWorkout.duration_minutes} минут</div>` : ''}
+        ${todayWorkout.duration_minutes ? `<div style="font-size:13px; color:#666; margin-top:4px;">${todayWorkout.duration_minutes} minutes</div>` : ''}
       </div>
     </div>
   `, 'border-color:#7c6aff33;') : ''
@@ -77,8 +77,8 @@ workoutsRouter.get('/', async (c) => {
   const content = `
     <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:28px;">
       <div>
-        <h1 style="margin:0; font-size:22px; font-weight:700; color:#e8e8e8;">Тренировки</h1>
-        <div style="font-size:13px; color:#555; margin-top:4px;">План — Google Sheets, факт — вручную</div>
+        <h1 style="margin:0; font-size:22px; font-weight:700; color:#e8e8e8;">Workouts</h1>
+        <div style="font-size:13px; color:#555; margin-top:4px;">Plan from Google Sheets, actuals entered manually</div>
       </div>
     </div>
 
@@ -89,14 +89,14 @@ workoutsRouter.get('/', async (c) => {
     <div style="height:16px;"></div>
 
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px;">
-      ${statMini('Выполнено', `${weekDone} / ${totalPlanned}`, '#7c6aff')}
-      ${statMini('Бег план', `${summary.planned_km} км`, '#3a9e6a')}
-      ${statMini('Осталось', `${upcoming} трен.`, '#d97706')}
+      ${statMini('Completed', `${weekDone} / ${totalPlanned}`, '#7c6aff')}
+      ${statMini('Running plan', `${summary.planned_km} km`, '#3a9e6a')}
+      ${statMini('Left', `${upcoming} sessions`, '#d97706')}
     </div>
 
     ${card(`
-      ${sectionTitle('Неделя')}
-      ${table(['День', 'Тип', 'Описание', 'План', 'Факт', 'Статус'], rows,
+      ${sectionTitle('Week')}
+      ${table(['Day', 'Type', 'Description', 'Plan', 'Actual', 'Status'], rows,
         ['width:50px;', 'width:100px;', '', 'width:90px;', 'width:200px;', 'width:130px;'],
         ['', 'col-type', '', 'col-duration', 'col-actual', 'col-status']
       )}
@@ -105,7 +105,7 @@ workoutsRouter.get('/', async (c) => {
     ${editScript()}
   `
 
-  return c.html(baseLayout('Тренировки', content, 'workouts'))
+  return c.html(baseLayout('Workouts', content, 'workouts'))
 })
 
 const renderActual = (w: WorkoutDTO): string => {
@@ -116,7 +116,7 @@ const renderActual = (w: WorkoutDTO): string => {
     return `
       <button class="cw-mark-btn" ${dateAttr} ${typeAttr}
         style="background:none; border:1px dashed #555; color:#888; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:12px;">
-        + отметить
+        + log
       </button>
     `
   }
@@ -125,21 +125,21 @@ const renderActual = (w: WorkoutDTO): string => {
   const id = w.completed_workout_id
   return `
     <span class="cw-view" data-id="${id}">
-      <span style="color:#3a9e6a; font-weight:600;">${km} км</span>
-      <span style="color:#666; font-size:12px;"> · ${mins} мин</span>
+      <span style="color:#3a9e6a; font-weight:600;">${km} km</span>
+      <span style="color:#666; font-size:12px;"> · ${mins} min</span>
       <button class="cw-edit-btn" data-id="${id}" data-km="${km}" data-mins="${mins}" ${dateAttr} ${typeAttr}
         style="background:none; border:none; color:#888; cursor:pointer; font-size:13px; margin-left:6px;">✏️</button>
       <button class="cw-del-btn" data-id="${id}"
-        style="background:none; border:none; color:#888; cursor:pointer; font-size:13px;" title="Снять отметку">🗑</button>
+        style="background:none; border:none; color:#888; cursor:pointer; font-size:13px;" title="Remove log">🗑</button>
     </span>
   `
 }
 
 const renderStatus = (w: WorkoutDTO): string => {
-  if (w.is_completed) return badge('Выполнено', '#3a9e6a')
-  if (w.is_today) return badge('Сегодня', '#7c6aff')
-  if (new Date(w.date) < new Date()) return badge('Пропущено', '#d97706')
-  return badge('Впереди', '#555')
+  if (w.is_completed) return badge('Completed', '#3a9e6a')
+  if (w.is_today) return badge('Today', '#7c6aff')
+  if (new Date(w.date) < new Date()) return badge('Missed', '#d97706')
+  return badge('Upcoming', '#555')
 }
 
 const renderSummary = (s: WeekSummaryDTO): string => {
@@ -148,9 +148,9 @@ const renderSummary = (s: WeekSummaryDTO): string => {
   return card(`
     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
       <div>
-        <div style="font-size:11px; color:#7c6aff; text-transform:uppercase; letter-spacing:0.5px;">Недельный объём бега</div>
+        <div style="font-size:11px; color:#7c6aff; text-transform:uppercase; letter-spacing:0.5px;">Weekly running volume</div>
         <div style="font-size:20px; font-weight:700; color:#e8e8e8; margin-top:4px;">
-          ${s.actual_km} / ${s.planned_km} км
+          ${s.actual_km} / ${s.planned_km} km
         </div>
       </div>
       <div style="font-size:22px; font-weight:700; color:${color};">${s.percent}%</div>
@@ -176,12 +176,12 @@ const editScript = () => `
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    if (!res.ok) { alert('Ошибка: ' + res.status); return false }
+    if (!res.ok) { alert('Error: ' + res.status); return false }
     return true
   }
   async function del(id) {
     const res = await fetch('/api/workouts/completed/' + id, { method: 'DELETE' })
-    if (!res.ok && res.status !== 204) { alert('Ошибка: ' + res.status); return false }
+    if (!res.ok && res.status !== 204) { alert('Error: ' + res.status); return false }
     return true
   }
   function ask(label, def) {
@@ -196,9 +196,9 @@ const editScript = () => `
     if (!(t instanceof HTMLElement)) return
 
     if (t.classList.contains('cw-mark-btn')) {
-      const km = ask('Дистанция, км:', '')
+      const km = ask('Distance, km:', '')
       if (km === null) return
-      const mins = ask('Длительность, мин:', '')
+      const mins = ask('Duration, min:', '')
       if (mins === null) return
       const ok = await upsert({
         workout_date: t.dataset.date,
@@ -211,9 +211,9 @@ const editScript = () => `
     }
 
     if (t.classList.contains('cw-edit-btn')) {
-      const km = ask('Дистанция, км:', t.dataset.km)
+      const km = ask('Distance, km:', t.dataset.km)
       if (km === null) return
-      const mins = ask('Длительность, мин:', t.dataset.mins)
+      const mins = ask('Duration, min:', t.dataset.mins)
       if (mins === null) return
       const ok = await upsert({
         workout_date: t.dataset.date,
@@ -226,7 +226,7 @@ const editScript = () => `
     }
 
     if (t.classList.contains('cw-del-btn')) {
-      if (!confirm('Снять отметку о выполнении?')) return
+      if (!confirm('Remove the completion log?')) return
       if (await del(t.dataset.id)) location.reload()
       return
     }

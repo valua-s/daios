@@ -1,6 +1,6 @@
 export const baseLayout = (title: string, content: string, activePage: string) => `
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -32,14 +32,14 @@ export const baseLayout = (title: string, content: string, activePage: string) =
         DAIOS
       </div>
 
-      ${navItem('/today', '📋', 'Сегодня', activePage === 'today')}
-      ${navItem('/calendar', '📅', 'Календарь', activePage === 'calendar')}
-      ${navItem('/backlog', '🗂', 'Бэклог', activePage === 'backlog')}
-      ${navItem('/workouts', '🏋️', 'Тренировки', activePage === 'workouts')}
-      ${navItem('/focus', '🎯', 'Фокус', activePage === 'focus')}
-      ${navItem('/notes', '📝', 'Заметки', activePage === 'notes')}
-      ${navItem('/diary', '📔', 'Дневник', activePage === 'diary')}
-      ${navItem('/settings', '⚙️', 'Настройки', activePage === 'settings')}
+      ${navItem('/today', '📋', 'Today', activePage === 'today')}
+      ${navItem('/calendar', '📅', 'Calendar', activePage === 'calendar')}
+      ${navItem('/backlog', '🗂', 'Backlog', activePage === 'backlog')}
+      ${navItem('/workouts', '🏋️', 'Workouts', activePage === 'workouts')}
+      ${navItem('/focus', '🎯', 'Focus', activePage === 'focus')}
+      ${navItem('/notes', '📝', 'Notes', activePage === 'notes')}
+      ${navItem('/diary', '📔', 'Diary', activePage === 'diary')}
+      ${navItem('/settings', '⚙️', 'Settings', activePage === 'settings')}
 
       <div style="margin-top:auto; padding:16px 20px; border-top:1px solid #2a2a2a;">
         <a href="/auth/logout" style="display:flex; align-items:center; gap:10px; font-size:13px; text-decoration:none; color:#666; transition: color 0.15s;" onmouseover="this.style.color='#e8e8e8'" onmouseout="this.style.color='#666'">
