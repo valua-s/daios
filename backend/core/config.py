@@ -74,6 +74,21 @@ class Settings(BaseSettings):
     google_sheets_workout_id: str = Field(..., description="Spreadsheet ID from URL")
     google_sheets_worksheet: str = Field("Triatlon", description="Название листа (вкладки) с тренировками")
 
+    # Strava
+    strava_client_id: str = Field("", description="Strava app client ID")
+    strava_client_secret: SecretStr = Field(SecretStr(""), description="Strava app client secret")
+    strava_refresh_token: SecretStr = Field(SecretStr(""), description="Strava refresh token from one-time OAuth")
+    strava_proxy_url: str = Field("", description="Proxy for Strava API, e.g. socks5://user:pass@host:port")
+    strava_sync_days: int = Field(7, description="How many days back each poll re-reads activities")
+
+    @property
+    def strava_enabled(self) -> bool:
+        return bool(
+            self.strava_client_id
+            and self.strava_client_secret.get_secret_value()
+            and self.strava_refresh_token.get_secret_value()
+        )
+
     # OpenWeatherMap
     openweather_api_key: str = Field(..., description="OpenWeatherMap API key")
     openweather_city: str = "Almaty"

@@ -10,6 +10,7 @@ ALLOWED_EVENT_NAMES: tuple[str, ...] = (
     "evening_summary",
     "collect_content",
     "sync_workouts",
+    "sync_strava",
     "evening_brief",
     "midnight_backlog",
     "tasks_reminder",

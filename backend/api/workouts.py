@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -18,6 +19,16 @@ DAYS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
 
 
 @dataclass
+class ActualWorkoutDTO:
+    id: int
+    type: str
+    distance_km: float
+    duration_minutes: int
+    source: str
+    note: str | None = None
+
+
+@dataclass
 class WorkoutDTO:
     day: str
     date: str
@@ -26,9 +37,7 @@ class WorkoutDTO:
     duration_minutes: int
     is_today: bool
     is_completed: bool = False
-    actual_distance_km: float | None = None
-    actual_duration_minutes: int | None = None
-    completed_workout_id: int | None = None
+    actuals: list[ActualWorkoutDTO] = field(default_factory=list)
     details: dict = field(default_factory=dict)
 
 
@@ -62,13 +71,22 @@ class WorkoutController(Controller):
         sunday = monday + timedelta(days=6)
 
         completed_records = await completed_repo.get_week(monday, sunday)
-        completed_by_date = {r.workout_date: r for r in completed_records}
+        completed_by_date: dict[date, list[ActualWorkoutDTO]] = defaultdict(list)
+        for r in completed_records:
+            completed_by_date[r.workout_date].append(ActualWorkoutDTO(
+                id=r.id,
+                type=r.activity_type,
+                distance_km=r.distance_km,
+                duration_minutes=r.duration_minutes,
+                source=r.source,
+                note=r.note,
+            ))
 
         result = []
         for i in range(7):
             d = monday + timedelta(days=i)
             plan = await workout_service.get_workout_for_date(d)
-            completed = completed_by_date.get(d)
+            actuals = completed_by_date.get(d, [])
             result.append(WorkoutDTO(
                 day=DAYS_RU[i],
                 date=d.isoformat(),
@@ -76,10 +94,8 @@ class WorkoutController(Controller):
                 description=plan.description if plan else "—",
                 duration_minutes=plan.duration_minutes if plan else 0,
                 is_today=d == today,
-                is_completed=completed is not None,
-                actual_distance_km=completed.distance_km if completed else None,
-                actual_duration_minutes=completed.duration_minutes if completed else None,
-                completed_workout_id=completed.id if completed else None,
+                is_completed=bool(actuals),
+                actuals=actuals,
                 details=plan.details if plan else {},
             ))
         return result
