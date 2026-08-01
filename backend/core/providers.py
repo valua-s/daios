@@ -21,6 +21,7 @@ from backend.integrations.bus_schedule import BusScheduleParser
 from backend.integrations.google_sheets import GoogleSheetsClient
 from backend.integrations.news import NewsClient
 from backend.integrations.rss import RSSParser
+from backend.integrations.strava import StravaClient, build_http_client
 from backend.integrations.telegram import TelegramNotifier
 from backend.integrations.vk import VKClient
 from backend.integrations.weather import WeatherClient
@@ -39,6 +40,7 @@ from backend.services.focus_service import FocusService
 from backend.services.llm_service import LLMService
 from backend.services.note_service import NoteService
 from backend.services.settings_service import SettingsService
+from backend.services.strava_service import StravaService
 from backend.services.task_service import TaskService
 from backend.services.wakeup_planner import WakeupPlanner
 from backend.services.workout_service import WorkoutService
@@ -69,6 +71,11 @@ class AppProvider(Provider):
     @provide(scope=Scope.APP)
     def get_telegram_notifier(self) -> TelegramNotifier:  # noqa: PLR6301
         return TelegramNotifier()
+
+    @provide(scope=Scope.APP)
+    async def get_strava_client(self, redis: Redis) -> AsyncIterator[StravaClient]:  # noqa: PLR6301
+        async with build_http_client() as http_client:
+            yield StravaClient(http_client, redis)
 
     @provide(scope=Scope.APP)
     def get_weather_client(self, http_client: httpx.AsyncClient) -> WeatherClient:  # noqa: PLR6301
@@ -169,6 +176,15 @@ class AppProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def get_completed_workout_repo(self, session: AsyncSession) -> CompletedWorkoutRepository:  # noqa: PLR6301
         return CompletedWorkoutRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_strava_service(  # noqa: PLR6301
+        self,
+        session: AsyncSession,
+        completed_repo: CompletedWorkoutRepository,
+        strava_client: StravaClient,
+    ) -> StravaService:
+        return StravaService(session, completed_repo, strava_client)
 
     @provide(scope=Scope.REQUEST)
     def get_context_agent(  # noqa: PLR6301

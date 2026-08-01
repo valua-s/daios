@@ -3,7 +3,7 @@ import { getCookie } from 'hono/cookie'
 import { baseLayout } from '../layouts/base'
 import { card, sectionTitle } from '../components/card'
 import { table, badge } from '../components/table'
-import { getWeekWorkouts, getWeekSummary, type WorkoutDTO, type WeekSummaryDTO } from '../api'
+import { getWeekWorkouts, getWeekSummary, type ActualWorkoutDTO, type WorkoutDTO, type WeekSummaryDTO } from '../api'
 
 export const workoutsRouter = new Hono()
 
@@ -48,7 +48,7 @@ workoutsRouter.get('/', async (c) => {
   }
 
   const todayWorkout = workouts.find(w => w.is_today)
-  const weekDone = workouts.filter(w => w.is_completed).length
+  const weekDone = workouts.filter(w => w.actuals.length > 0).length
   const totalPlanned = workouts.filter(w => w.type !== 'rest').length
   const upcoming = workouts.filter(w => new Date(w.date) > new Date() && w.type !== 'rest').length
 
@@ -108,30 +108,48 @@ workoutsRouter.get('/', async (c) => {
   return c.html(baseLayout('Workouts', content, 'workouts'))
 })
 
-const renderActual = (w: WorkoutDTO): string => {
-  const dateAttr = `data-date="${w.date}"`
-  const typeAttr = `data-type="${w.type === 'rest' ? 'running' : w.type}"`
-  if (!w.is_completed || w.completed_workout_id === null) {
-    if (w.type === 'rest') return '<span style="color:#444;">—</span>'
-    return `
-      <button class="cw-mark-btn" ${dateAttr} ${typeAttr}
-        style="background:none; border:1px dashed #555; color:#888; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:12px;">
-        + log
-      </button>
-    `
-  }
-  const km = w.actual_distance_km !== null ? w.actual_distance_km.toFixed(2) : '0'
-  const mins = w.actual_duration_minutes ?? 0
-  const id = w.completed_workout_id
+const formatMetric = (a: ActualWorkoutDTO): string => {
+  if (a.type === 'strength') return `${a.duration_minutes} min`
+  if (a.type === 'swimming') return `${Math.round(a.distance_km * 1000)} m · ${a.duration_minutes} min`
+  return `${a.distance_km.toFixed(2)} km · ${a.duration_minutes} min`
+}
+
+const actualRow = (a: ActualWorkoutDTO, w: WorkoutDTO): string => {
+  const controls = a.source === 'strava'
+    ? `<span style="color:#555; font-size:11px;" title="${a.note ?? 'Strava'}">strava</span>`
+    : `<button class="cw-edit-btn" data-id="${a.id}" data-km="${a.distance_km.toFixed(2)}" data-mins="${a.duration_minutes}"
+         data-date="${w.date}" data-type="${a.type}"
+         style="background:none; border:none; color:#888; cursor:pointer; font-size:13px;">✏️</button>
+       <button class="cw-del-btn" data-id="${a.id}"
+         style="background:none; border:none; color:#888; cursor:pointer; font-size:13px;" title="Remove log">🗑</button>`
   return `
-    <span class="cw-view" data-id="${id}">
-      <span style="color:#3a9e6a; font-weight:600;">${km} km</span>
-      <span style="color:#666; font-size:12px;"> · ${mins} min</span>
-      <button class="cw-edit-btn" data-id="${id}" data-km="${km}" data-mins="${mins}" ${dateAttr} ${typeAttr}
-        style="background:none; border:none; color:#888; cursor:pointer; font-size:13px; margin-left:6px;">✏️</button>
-      <button class="cw-del-btn" data-id="${id}"
-        style="background:none; border:none; color:#888; cursor:pointer; font-size:13px;" title="Remove log">🗑</button>
-    </span>
+    <div style="display:flex; align-items:center; gap:6px; white-space:nowrap;">
+      <span style="color:#666; font-size:12px; min-width:62px;">${TYPE_LABELS[a.type]}</span>
+      <span style="color:#3a9e6a; font-weight:600; font-size:13px;">${formatMetric(a)}</span>
+      ${controls}
+    </div>
+  `
+}
+
+const renderActual = (w: WorkoutDTO): string => {
+  const hasManual = w.actuals.some(a => a.source === 'manual')
+  const addBtn = w.type === 'rest' || hasManual ? '' : `
+    <button class="cw-mark-btn" data-date="${w.date}" data-type="${w.type}"
+      style="background:none; border:1px dashed #555; color:#888; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:12px; align-self:flex-start;">
+      + log
+    </button>
+  `
+
+  if (w.actuals.length === 0) {
+    if (w.type === 'rest') return '<span style="color:#444;">—</span>'
+    return addBtn
+  }
+
+  return `
+    <div style="display:flex; flex-direction:column; gap:4px;">
+      ${w.actuals.map(a => actualRow(a, w)).join('')}
+      ${addBtn}
+    </div>
   `
 }
 

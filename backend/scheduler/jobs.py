@@ -10,6 +10,7 @@ from backend.integrations.telegram import TelegramNotifier
 from backend.services.content_service import ContentService
 from backend.services.focus_resolver import FocusResolver
 from backend.services.llm_service import LLMService
+from backend.services.strava_service import StravaService
 from backend.services.task_service import TaskService
 from backend.services.workout_service import WorkoutService
 
@@ -64,6 +65,17 @@ def make_sync_workouts(container: AsyncContainer) -> Callable:
             svc = await request_container.get(WorkoutService)
             count = await svc.sync_week()
             logger.info("sync_workouts done: %d days synced", count)
+
+    return job
+
+
+def make_sync_strava(container: AsyncContainer) -> Callable:
+    async def job() -> None:
+        logger.info("Running sync_strava")
+        async with container() as request_container:
+            svc = await request_container.get(StravaService)
+            saved = await svc.sync_recent()
+            logger.info("sync_strava done: %d activities saved", saved)
 
     return job
 

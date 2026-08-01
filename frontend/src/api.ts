@@ -114,6 +114,15 @@ export const setMonthFocus = (description: string, token?: string) =>
 
 // ── Workouts ───────────────────────────────────────────────────────────────
 
+export interface ActualWorkoutDTO {
+  id: number
+  type: 'running' | 'cycling' | 'swimming' | 'strength' | 'combined'
+  distance_km: number
+  duration_minutes: number
+  source: 'manual' | 'strava'
+  note: string | null
+}
+
 export interface WorkoutDTO {
   day: string
   date: string
@@ -122,9 +131,7 @@ export interface WorkoutDTO {
   duration_minutes: number
   is_today: boolean
   is_completed: boolean
-  actual_distance_km: number | null
-  actual_duration_minutes: number | null
-  completed_workout_id: number | null
+  actuals: ActualWorkoutDTO[]
   details: Record<string, unknown>
 }
 
