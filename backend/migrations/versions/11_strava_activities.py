@@ -25,49 +25,73 @@ _EVENT_NAMES_OLD = (
 )
 _EVENT_NAMES_NEW = (*_EVENT_NAMES_OLD, "sync_strava")
 
+_TABLE = "completed_workouts"
+
 
 def _quoted_list(names: tuple[str, ...]) -> str:
     return ", ".join(f"'{n}'" for n in names)
 
 
+def _has_column(insp: sa.engine.reflection.Inspector, table: str, column: str) -> bool:
+    return any(c["name"] == column for c in insp.get_columns(table))
+
+
+def _has_index(insp: sa.engine.reflection.Inspector, table: str, name: str) -> bool:
+    return any(i["name"] == name for i in insp.get_indexes(table))
+
+
+def _has_constraint(bind: sa.Connection, name: str) -> bool:
+    return bool(
+        bind.execute(
+            sa.text("SELECT 1 FROM pg_constraint WHERE conname = :n"),
+            {"n": name},
+        ).scalar()
+    )
+
+
 def upgrade() -> None:
-    op.add_column(
-        "completed_workouts",
-        sa.Column("source", sa.Text(), nullable=False, server_default=sa.text("'manual'")),
-    )
-    op.add_column(
-        "completed_workouts",
-        sa.Column("strava_activity_id", sa.BigInteger(), nullable=True),
-    )
-    op.add_column(
-        "completed_workouts",
-        sa.Column("started_at", sa.DateTime(), nullable=True),
-    )
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+
+    if not _has_column(insp, _TABLE, "source"):
+        op.add_column(
+            _TABLE,
+            sa.Column("source", sa.Text(), nullable=False, server_default=sa.text("'manual'")),
+        )
+    if not _has_column(insp, _TABLE, "strava_activity_id"):
+        op.add_column(_TABLE, sa.Column("strava_activity_id", sa.BigInteger(), nullable=True))
+    if not _has_column(insp, _TABLE, "started_at"):
+        op.add_column(_TABLE, sa.Column("started_at", sa.DateTime(), nullable=True))
+
+    insp = sa.inspect(bind)
 
     # День перестаёт быть уникальным: тренировок за день может быть несколько.
-    op.drop_constraint("uq_completed_workouts_workout_date", "completed_workouts", type_="unique")
-    op.create_index(
-        "ix_completed_workouts_workout_date",
-        "completed_workouts",
-        ["workout_date"],
-        if_not_exists=True,
-    )
-    op.create_index(
-        "ix_completed_workouts_strava_activity_id",
-        "completed_workouts",
-        ["strava_activity_id"],
-        unique=True,
-    )
-    # Ручная отметка остаётся одна на день — на неё опирается upsert из UI.
-    op.create_index(
-        "uq_completed_workouts_manual_date",
-        "completed_workouts",
-        ["workout_date"],
-        unique=True,
-        postgresql_where=sa.text("source = 'manual'"),
-    )
+    if _has_constraint(bind, "uq_completed_workouts_workout_date"):
+        op.drop_constraint("uq_completed_workouts_workout_date", _TABLE, type_="unique")
 
-    op.drop_constraint("ck_schedules_event_name", "schedules", type_="check")
+    if not _has_index(insp, _TABLE, "ix_completed_workouts_workout_date"):
+        op.create_index("ix_completed_workouts_workout_date", _TABLE, ["workout_date"])
+
+    if not _has_index(insp, _TABLE, "ix_completed_workouts_strava_activity_id"):
+        op.create_index(
+            "ix_completed_workouts_strava_activity_id",
+            _TABLE,
+            ["strava_activity_id"],
+            unique=True,
+        )
+
+    # Ручная отметка остаётся одна на день — на неё опирается upsert из UI.
+    if not _has_index(insp, _TABLE, "uq_completed_workouts_manual_date"):
+        op.create_index(
+            "uq_completed_workouts_manual_date",
+            _TABLE,
+            ["workout_date"],
+            unique=True,
+            postgresql_where=sa.text("source = 'manual'"),
+        )
+
+    if _has_constraint(bind, "ck_schedules_event_name"):
+        op.drop_constraint("ck_schedules_event_name", "schedules", type_="check")
     op.create_check_constraint(
         "ck_schedules_event_name",
         "schedules",
@@ -76,8 +100,12 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+
     op.execute("DELETE FROM schedules WHERE event_name = 'sync_strava'")
-    op.drop_constraint("ck_schedules_event_name", "schedules", type_="check")
+    if _has_constraint(bind, "ck_schedules_event_name"):
+        op.drop_constraint("ck_schedules_event_name", "schedules", type_="check")
     op.create_check_constraint(
         "ck_schedules_event_name",
         "schedules",
@@ -85,14 +113,22 @@ def downgrade() -> None:
     )
 
     op.execute("DELETE FROM completed_workouts WHERE source = 'strava'")
-
-    op.drop_index("uq_completed_workouts_manual_date", table_name="completed_workouts")
-    op.drop_index("ix_completed_workouts_strava_activity_id", table_name="completed_workouts")
-    op.drop_index("ix_completed_workouts_workout_date", table_name="completed_workouts", if_exists=True)
-    op.create_unique_constraint(
-        "uq_completed_workouts_workout_date", "completed_workouts", ["workout_date"],
+    op.execute(
+        "DELETE FROM completed_workouts a USING completed_workouts b "
+        "WHERE a.workout_date = b.workout_date AND a.id > b.id"
     )
 
-    op.drop_column("completed_workouts", "started_at")
-    op.drop_column("completed_workouts", "strava_activity_id")
-    op.drop_column("completed_workouts", "source")
+    for index_name in (
+        "uq_completed_workouts_manual_date",
+        "ix_completed_workouts_strava_activity_id",
+        "ix_completed_workouts_workout_date",
+    ):
+        if _has_index(insp, _TABLE, index_name):
+            op.drop_index(index_name, table_name=_TABLE)
+
+    if not _has_constraint(bind, "uq_completed_workouts_workout_date"):
+        op.create_unique_constraint("uq_completed_workouts_workout_date", _TABLE, ["workout_date"])
+
+    for column in ("started_at", "strava_activity_id", "source"):
+        if _has_column(insp, _TABLE, column):
+            op.drop_column(_TABLE, column)
