@@ -22,6 +22,8 @@ AUTH_CACHE_KEY = "daios:strava:access_token"
 PER_PAGE = 100
 TOKEN_EXPIRY_MARGIN_SECONDS = 60
 
+_AUTH_RETRY_STATUSES = (httpx.codes.UNAUTHORIZED, httpx.codes.FORBIDDEN)
+
 RUNNING = "running"
 CYCLING = "cycling"
 SWIMMING = "swimming"
@@ -78,13 +80,25 @@ class StravaClient(BaseIntegration):
             params=params,
             headers={"Authorization": f"Bearer {token}"},
         )
-        if response.status_code == httpx.codes.UNAUTHORIZED:
+        if response.status_code in _AUTH_RETRY_STATUSES:
+            logger.warning(
+                "Strava activities request rejected (%s): %s",
+                response.status_code, response.text[:500],
+            )
+            await self._redis.delete(AUTH_CACHE_KEY)
             token = await self._refresh_access_token()
             response = await self._http.get(
                 ACTIVITIES_URL,
                 params=params,
                 headers={"Authorization": f"Bearer {token}"},
             )
+        if response.status_code == httpx.codes.FORBIDDEN:
+            logger.error("Strava returned 403 after token refresh: %s", response.text[:500])
+            msg = (
+                "Strava отклонила запрос активностей (403). Вероятно, у токена нет "
+                "scope activity:read_all или доступ приложения отозван — нужен повторный OAuth."
+            )
+            raise StravaAuthError(msg)
         response.raise_for_status()
         activities: list[dict] = response.json()
         return sorted(activities, key=lambda a: str(a.get("start_date_local", "")))
@@ -111,6 +125,12 @@ class StravaClient(BaseIntegration):
             raise StravaAuthError(msg)
 
         data = response.json()
+        new_refresh: str = data.get("refresh_token", "")
+        if new_refresh and new_refresh != settings.strava_refresh_token.get_secret_value():
+            logger.warning(
+                "Strava выдала новый refresh_token — обнови STRAVA_REFRESH_TOKEN в .env: %s",
+                new_refresh,
+            )
         access_token: str = data["access_token"]
         expires_at = int(data["expires_at"])
 

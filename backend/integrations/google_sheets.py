@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
+import time
 from typing import TYPE_CHECKING
 
 import gspread
@@ -11,9 +13,17 @@ from backend.core.config import settings
 from backend.integrations.base import BaseIntegration
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from datetime import date
 
+logger = logging.getLogger(__name__)
+
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+
+ROWS_CACHE_TTL_SECONDS = 120
+RATE_LIMIT_STATUS = 429
+RETRY_ATTEMPTS = 4
+RETRY_BASE_DELAY_SECONDS = 2.0
 
 # Порядок дней в таблице (столбцы 1-7 после колонки "Неделя")
 WEEKDAY_COLUMNS = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"]
@@ -59,18 +69,34 @@ class GoogleSheetsClient(BaseIntegration):
         self._client = gspread.authorize(creds)
         self._spreadsheet_id = settings.google_sheets_workout_id
         self._worksheet_name = settings.google_sheets_worksheet
+        self._worksheet: gspread.Worksheet | None = None
+        self._rows_cache: list[dict] | None = None
+        self._rows_cached_at = 0.0
+        self._lock = asyncio.Lock()
 
     async def get_workout_for_date(self, target_date: date) -> dict | None:
         """Возвращает сырые данные тренировки для конкретной даты.
 
         Ищет нужную неделю по номеру ISO-недели года, затем берёт нужный день.
         """
+        rows = await self._get_rows()
+        return self._pick_day(rows, target_date)
+
+    async def get_workouts_for_dates(self, dates: Iterable[date]) -> dict[date, dict | None]:
+        """Читает таблицу один раз и раскладывает тренировки по датам."""
+        rows = await self._get_rows()
+        return {d: self._pick_day(rows, d) for d in dates}
+
+    def invalidate_cache(self) -> None:
+        self._rows_cache = None
+        self._rows_cached_at = 0.0
+
+    @staticmethod
+    def _pick_day(rows: list[dict], target_date: date) -> dict | None:
         week_number = target_date.isocalendar().week
         weekday_index = target_date.weekday()  # 0=ПН, 6=ВС
 
-        all_rows = await asyncio.to_thread(self._fetch_all_rows)
-
-        for row in all_rows:
+        for row in rows:
             # Первый столбец — номер недели, может быть int или str
             try:
                 row_week = int(row.get("Неделя", -1))
@@ -84,11 +110,39 @@ class GoogleSheetsClient(BaseIntegration):
 
         return None
 
+    async def _get_rows(self) -> list[dict]:
+        async with self._lock:
+            if (
+                self._rows_cache is not None
+                and time.monotonic() - self._rows_cached_at < ROWS_CACHE_TTL_SECONDS
+            ):
+                return self._rows_cache
+
+            rows = await self._fetch_all_rows_with_retry()
+            self._rows_cache = rows
+            self._rows_cached_at = time.monotonic()
+            return rows
+
+    async def _fetch_all_rows_with_retry(self) -> list[dict]:
+        delay = RETRY_BASE_DELAY_SECONDS
+        for attempt in range(1, RETRY_ATTEMPTS + 1):
+            try:
+                return await asyncio.to_thread(self._fetch_all_rows)
+            except gspread.exceptions.APIError as exc:
+                if exc.response.status_code != RATE_LIMIT_STATUS or attempt == RETRY_ATTEMPTS:
+                    raise
+                self._worksheet = None
+                logger.warning(
+                    "Google Sheets quota exceeded, retry %d/%d in %.0fs",
+                    attempt, RETRY_ATTEMPTS - 1, delay,
+                )
+                await asyncio.sleep(delay)
+                delay *= 2
+        return []
+
     def _fetch_all_rows(self) -> list[dict]:
         """Синхронное чтение всех строк таблицы."""
-        spreadsheet = self._client.open_by_key(self._spreadsheet_id)
-        worksheet = spreadsheet.worksheet(self._worksheet_name)
-        all_values = worksheet.get_all_values()
+        all_values = self._get_worksheet().get_all_values()
         if not all_values:
             return []
 
@@ -115,6 +169,12 @@ class GoogleSheetsClient(BaseIntegration):
                 if headers[i].strip()  # пропускаем пустые заголовки
             })
         return rows
+
+    def _get_worksheet(self) -> gspread.Worksheet:
+        if self._worksheet is None:
+            spreadsheet = self._client.open_by_key(self._spreadsheet_id)
+            self._worksheet = spreadsheet.worksheet(self._worksheet_name)
+        return self._worksheet
 
 
 def parse_workout_text(raw: str) -> dict:
