@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from dishka import AsyncContainer
 
 from backend.agents.orchestrator import Orchestrator
+from backend.integrations.strava import StravaAuthError
 from backend.integrations.telegram import TelegramNotifier
 from backend.services.content_service import ContentService
 from backend.services.focus_resolver import FocusResolver
@@ -74,7 +75,11 @@ def make_sync_strava(container: AsyncContainer) -> Callable:
         logger.info("Running sync_strava")
         async with container() as request_container:
             svc = await request_container.get(StravaService)
-            saved = await svc.sync_recent()
+            try:
+                saved = await svc.sync_recent()
+            except StravaAuthError as exc:
+                logger.error("sync_strava skipped: %s", exc)
+                return
             logger.info("sync_strava done: %d activities saved", saved)
 
     return job

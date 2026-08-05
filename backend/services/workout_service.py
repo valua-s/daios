@@ -67,11 +67,17 @@ class WorkoutService:
             today = _today()
             week_start = today - timedelta(days=today.weekday())
 
+        days = [week_start + timedelta(days=i) for i in range(7)]
+        try:
+            raw_by_date = await self._sheets.get_workouts_for_dates(days)
+        except Exception:
+            logger.exception("Failed to read workouts from Sheets for week %s", week_start)
+            return 0
+
         synced = 0
-        for i in range(7):
-            d = week_start + timedelta(days=i)
+        for d in days:
             try:
-                raw = await self._sheets.get_workout_for_date(d)
+                raw = raw_by_date.get(d)
                 plan = WorkoutPlan(**parse_workout_text(raw["raw"] if raw else ""))
                 await self._upsert_cache(d, plan)
                 synced += 1
