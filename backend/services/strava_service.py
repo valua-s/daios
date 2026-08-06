@@ -9,6 +9,8 @@ from backend.core.config import settings
 from backend.integrations.strava import map_activity_type
 
 if TYPE_CHECKING:
+    from datetime import date
+
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from backend.integrations.strava import StravaClient
@@ -49,14 +51,14 @@ class StravaService:
         after = now - timedelta(days=window_days)
 
         activities = await self._client.list_activities(after, now)
-        manual_dates = await self._repo.get_manual_dates(after.date(), now.date())
+        manual_keys = await self._repo.get_manual_keys(after.date(), now.date())
 
         saved = 0
         for activity in activities:
-            if await self._store(activity, manual_dates):
+            if await self._store(activity, manual_keys):
                 saved += 1
 
-        removed = await self._repo.delete_strava_for_dates(manual_dates)
+        removed = await self._repo.delete_strava_for_keys(manual_keys)
         await self._session.commit()
         logger.info(
             "Strava sync done: %d activities saved, %d superseded by manual entries",
@@ -64,7 +66,7 @@ class StravaService:
         )
         return saved
 
-    async def _store(self, activity: dict, manual_dates: set) -> bool:
+    async def _store(self, activity: dict, manual_keys: set[tuple[date, str]]) -> bool:
         activity_type = map_activity_type(str(activity.get("sport_type") or activity.get("type") or ""))
         if activity_type is None:
             return False
@@ -74,7 +76,7 @@ class StravaService:
             logger.warning("Strava activity %s has no start date, skipped", activity.get("id"))
             return False
 
-        if started_at.date() in manual_dates:
+        if (started_at.date(), activity_type) in manual_keys:
             return False
 
         await self._repo.upsert_from_strava(

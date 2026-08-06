@@ -45,16 +45,18 @@ class CompletedWorkoutRepository(BaseRepository[CompletedWorkout]):
         )
         return list(result.scalars().all())
 
-    async def get_manual_dates(self, week_start: date, week_end: date) -> set[date]:
-        """Дни с ручной отметкой — синхронизация их не перезаписывает."""
+    async def get_manual_keys(
+        self, week_start: date, week_end: date,
+    ) -> set[tuple[date, str]]:
+        """Пары (дата, тип) с ручной отметкой — синхронизация их не перезаписывает."""
         result = await self._session.execute(
-            select(CompletedWorkout.workout_date).where(
+            select(CompletedWorkout.workout_date, CompletedWorkout.activity_type).where(
                 CompletedWorkout.source == SOURCE_MANUAL,
                 CompletedWorkout.workout_date >= week_start,
                 CompletedWorkout.workout_date <= week_end,
             )
         )
-        return set(result.scalars().all())
+        return {(row.workout_date, row.activity_type) for row in result}
 
     async def upsert(
         self,
@@ -76,9 +78,13 @@ class CompletedWorkoutRepository(BaseRepository[CompletedWorkout]):
             insert(CompletedWorkout)
             .values(**values)
             .on_conflict_do_update(
-                index_elements=["workout_date"],
+                index_elements=["workout_date", "activity_type"],
                 index_where=_MANUAL_ONLY,
-                set_={k: v for k, v in values.items() if k != "workout_date"},
+                set_={
+                    k: v
+                    for k, v in values.items()
+                    if k not in {"workout_date", "activity_type"}
+                },
             )
             .returning(CompletedWorkout)
         )
@@ -116,14 +122,17 @@ class CompletedWorkoutRepository(BaseRepository[CompletedWorkout]):
         )
         await self._session.execute(stmt)
 
-    async def delete_strava_for_dates(self, dates: set[date]) -> int:
-        """Убирает записи Strava за дни, где пользователь сделал ручную отметку."""
-        if not dates:
+    async def delete_strava_for_keys(self, keys: set[tuple[date, str]]) -> int:
+        """Убирает записи Strava там, где та же активность отмечена вручную."""
+        if not keys:
             return 0
         result = await self._session.execute(
             sa.delete(CompletedWorkout).where(
                 CompletedWorkout.source == SOURCE_STRAVA,
-                CompletedWorkout.workout_date.in_(dates),
+                sa.tuple_(
+                    CompletedWorkout.workout_date,
+                    CompletedWorkout.activity_type,
+                ).in_(keys),
             )
         )
         return result.rowcount or 0
