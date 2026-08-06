@@ -80,11 +80,8 @@ class StravaClient(BaseIntegration):
             params=params,
             headers={"Authorization": f"Bearer {token}"},
         )
-        if response.status_code in _AUTH_RETRY_STATUSES:
-            logger.warning(
-                "Strava activities request rejected (%s): %s",
-                response.status_code, response.text[:500],
-            )
+        if response.status_code == httpx.codes.UNAUTHORIZED:
+            logger.warning("Strava rejected access token, refreshing: %s", response.text[:300])
             await self._redis.delete(AUTH_CACHE_KEY)
             token = await self._refresh_access_token()
             response = await self._http.get(
@@ -93,11 +90,7 @@ class StravaClient(BaseIntegration):
                 headers={"Authorization": f"Bearer {token}"},
             )
         if response.status_code == httpx.codes.FORBIDDEN:
-            logger.error("Strava returned 403 after token refresh: %s", response.text[:500])
-            msg = (
-                "Strava отклонила запрос активностей (403). Вероятно, у токена нет "
-                "scope activity:read_all или доступ приложения отозван — нужен повторный OAuth."
-            )
+            msg = f"Strava отклонила запрос активностей (403): {response.text[:300]}"
             raise StravaAuthError(msg)
         response.raise_for_status()
         activities: list[dict] = response.json()

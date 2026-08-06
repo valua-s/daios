@@ -35,8 +35,9 @@ class CompletedWorkout(Base):
 
     __table_args__ = (
         sa.Index(
-            "uq_completed_workouts_manual_date",
+            "uq_completed_workouts_manual_date_type",
             "workout_date",
+            "activity_type",
             unique=True,
             postgresql_where=sa.text(f"source = '{SOURCE_MANUAL}'"),
         ),

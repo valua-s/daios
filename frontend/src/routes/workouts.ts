@@ -55,9 +55,9 @@ workoutsRouter.get('/', async (c) => {
   const rows = workouts.map(w => [
     `<span style="color:${w.is_today ? '#7c6aff' : '#888'}; font-weight:${w.is_today ? '600' : '400'};">${w.day}</span>`,
     badge(TYPE_LABELS[w.type], TYPE_COLORS[w.type]),
-    `<span style="color:${w.type === 'rest' ? '#444' : '#888'}; font-size:13px;">${w.description}</span>`,
     w.duration_minutes ? `<span style="color:#666; font-size:13px;">${w.duration_minutes} min</span>` : '—',
     renderActual(w),
+    `<span style="color:${w.type === 'rest' ? '#444' : '#888'}; font-size:13px;">${w.description}</span>`,
     renderStatus(w),
   ])
 
@@ -96,12 +96,13 @@ workoutsRouter.get('/', async (c) => {
 
     ${card(`
       ${sectionTitle('Week')}
-      ${table(['Day', 'Type', 'Description', 'Plan', 'Actual', 'Status'], rows,
-        ['width:50px;', 'width:100px;', '', 'width:90px;', 'width:200px;', 'width:130px;'],
-        ['', 'col-type', '', 'col-duration', 'col-actual', 'col-status']
+      ${table(['Day', 'Type', 'Plan', 'Actual', 'Description', 'Status'], rows,
+        ['width:50px;', 'width:100px;', 'width:90px;', 'width:230px;', '', 'width:130px;'],
+        ['', 'col-type', 'col-duration', 'col-actual', '', 'col-status']
       )}
     `)}
 
+    ${logDialog()}
     ${editScript()}
   `
 
@@ -117,7 +118,7 @@ const formatMetric = (a: ActualWorkoutDTO): string => {
 const actualRow = (a: ActualWorkoutDTO, w: WorkoutDTO): string => {
   const controls = a.source === 'strava'
     ? `<span style="color:#555; font-size:11px;" title="${a.note ?? 'Strava'}">strava</span>`
-    : `<button class="cw-edit-btn" data-id="${a.id}" data-km="${a.distance_km.toFixed(2)}" data-mins="${a.duration_minutes}"
+    : `<button class="cw-edit-btn" data-id="${a.id}" data-km="${a.distance_km}" data-mins="${a.duration_minutes}"
          data-date="${w.date}" data-type="${a.type}"
          style="background:none; border:none; color:#888; cursor:pointer; font-size:13px;">✏️</button>
        <button class="cw-del-btn" data-id="${a.id}"
@@ -131,10 +132,22 @@ const actualRow = (a: ActualWorkoutDTO, w: WorkoutDTO): string => {
   `
 }
 
+const LOGGABLE = ['running', 'cycling', 'swimming', 'strength']
+
+const defaultActivity = (w: WorkoutDTO): string => {
+  const logged = w.actuals.map(a => a.type)
+  const planned: string[] = LOGGABLE.includes(w.type)
+    ? [w.type]
+    : (w.details?.disciplines ?? []).filter((d: string) => LOGGABLE.includes(d))
+  return planned.find(d => !logged.includes(d))
+    ?? LOGGABLE.find(d => !logged.includes(d))
+    ?? planned[0]
+    ?? 'running'
+}
+
 const renderActual = (w: WorkoutDTO): string => {
-  const hasManual = w.actuals.some(a => a.source === 'manual')
-  const addBtn = w.type === 'rest' || hasManual ? '' : `
-    <button class="cw-mark-btn" data-date="${w.date}" data-type="${w.type}"
+  const addBtn = w.type === 'rest' ? '' : `
+    <button class="cw-mark-btn" data-date="${w.date}" data-type="${defaultActivity(w)}"
       style="background:none; border:1px dashed #555; color:#888; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:12px; align-self:flex-start;">
       + log
     </button>
@@ -185,6 +198,43 @@ const statMini = (label: string, value: string, color: string) =>
     <div style="font-size:12px; color:#555; margin-top:2px;">${label}</div>
   `)
 
+const logDialog = () => `
+<dialog id="cw-dialog" style="background:#141414; border:1px solid #2a2a2a; border-radius:8px; padding:20px; color:#e8e8e8; width:300px;">
+  <form method="dialog" id="cw-form" style="display:flex; flex-direction:column; gap:12px;">
+    <div id="cw-dialog-title" style="font-size:15px; font-weight:600;">Log workout</div>
+
+    <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:#888;">
+      Activity
+      <select id="cw-activity" style="background:#1c1c1c; border:1px solid #2a2a2a; border-radius:4px; color:#e8e8e8; padding:6px; font-size:13px;">
+        <option value="running">Running</option>
+        <option value="cycling">Cycling</option>
+        <option value="swimming">Swimming</option>
+        <option value="strength">Strength</option>
+      </select>
+    </label>
+
+    <label id="cw-distance-row" style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:#888;">
+      <span id="cw-distance-label">Distance, km</span>
+      <input id="cw-distance" type="number" step="0.01" min="0" inputmode="decimal"
+        style="background:#1c1c1c; border:1px solid #2a2a2a; border-radius:4px; color:#e8e8e8; padding:6px; font-size:13px;">
+    </label>
+
+    <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:#888;">
+      Duration, min
+      <input id="cw-duration" type="number" step="1" min="0" inputmode="numeric"
+        style="background:#1c1c1c; border:1px solid #2a2a2a; border-radius:4px; color:#e8e8e8; padding:6px; font-size:13px;">
+    </label>
+
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:4px;">
+      <button value="cancel" type="submit"
+        style="background:none; border:1px solid #2a2a2a; color:#888; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px;">Cancel</button>
+      <button value="save" type="submit" id="cw-save"
+        style="background:#7c6aff; border:none; color:#fff; padding:6px 14px; border-radius:4px; cursor:pointer; font-size:13px;">Save</button>
+    </div>
+  </form>
+</dialog>
+`
+
 const editScript = () => `
 <script>
 (function() {
@@ -202,44 +252,86 @@ const editScript = () => `
     if (!res.ok && res.status !== 204) { alert('Error: ' + res.status); return false }
     return true
   }
-  function ask(label, def) {
-    const v = prompt(label, def != null ? String(def) : '')
-    if (v === null) return null
-    const n = parseFloat(v.replace(',', '.'))
-    return isNaN(n) || n < 0 ? null : n
+  const dialog = document.getElementById('cw-dialog')
+  const form = document.getElementById('cw-form')
+  const activityEl = document.getElementById('cw-activity')
+  const distanceEl = document.getElementById('cw-distance')
+  const distanceRow = document.getElementById('cw-distance-row')
+  const distanceLabel = document.getElementById('cw-distance-label')
+  const durationEl = document.getElementById('cw-duration')
+  const titleEl = document.getElementById('cw-dialog-title')
+  let pendingDate = null
+  let editId = null
+  let editType = null
+
+  function syncFields() {
+    const type = activityEl.value
+    distanceRow.style.display = type === 'strength' ? 'none' : 'flex'
+    if (type === 'swimming') {
+      distanceLabel.textContent = 'Distance, m'
+      distanceEl.step = '10'
+    } else {
+      distanceLabel.textContent = 'Distance, km'
+      distanceEl.step = '0.01'
+    }
   }
+  activityEl.addEventListener('change', syncFields)
+
+  function openDialog(opts) {
+    pendingDate = opts.date
+    editId = opts.id != null ? opts.id : null
+    editType = editId ? opts.type : null
+    titleEl.textContent = opts.title
+    activityEl.value = opts.type
+    syncFields()
+    const km = opts.km != null ? parseFloat(opts.km) : 0
+    distanceEl.value = opts.km == null ? '' : (opts.type === 'swimming' ? Math.round(km * 1000) : km)
+    durationEl.value = opts.mins != null ? opts.mins : ''
+    dialog.showModal()
+    durationEl.focus()
+  }
+
+  form.addEventListener('submit', async (e) => {
+    if (e.submitter && e.submitter.value !== 'save') return
+    e.preventDefault()
+    const type = activityEl.value
+    const rawDistance = parseFloat((distanceEl.value || '0').replace(',', '.'))
+    const distance = isNaN(rawDistance) || rawDistance < 0 || type === 'strength' ? 0 : rawDistance
+    const mins = parseInt(durationEl.value || '0', 10)
+    const ok = await upsert({
+      workout_date: pendingDate,
+      activity_type: type,
+      distance_km: type === 'swimming' ? distance / 1000 : distance,
+      duration_minutes: isNaN(mins) || mins < 0 ? 0 : mins,
+    })
+    if (!ok) return
+    // Смена типа создаёт запись по новому ключу — старую убираем.
+    if (editId && editType && editType !== type) await del(editId)
+    location.reload()
+  })
 
   document.addEventListener('click', async (e) => {
     const t = e.target
     if (!(t instanceof HTMLElement)) return
 
     if (t.classList.contains('cw-mark-btn')) {
-      const km = ask('Distance, km:', '')
-      if (km === null) return
-      const mins = ask('Duration, min:', '')
-      if (mins === null) return
-      const ok = await upsert({
-        workout_date: t.dataset.date,
-        activity_type: t.dataset.type,
-        distance_km: km,
-        duration_minutes: Math.round(mins),
+      openDialog({
+        title: 'Log workout',
+        date: t.dataset.date,
+        type: t.dataset.type,
       })
-      if (ok) location.reload()
       return
     }
 
     if (t.classList.contains('cw-edit-btn')) {
-      const km = ask('Distance, km:', t.dataset.km)
-      if (km === null) return
-      const mins = ask('Duration, min:', t.dataset.mins)
-      if (mins === null) return
-      const ok = await upsert({
-        workout_date: t.dataset.date,
-        activity_type: t.dataset.type,
-        distance_km: km,
-        duration_minutes: Math.round(mins),
+      openDialog({
+        title: 'Edit log',
+        date: t.dataset.date,
+        type: t.dataset.type,
+        km: t.dataset.km,
+        mins: t.dataset.mins,
+        id: t.dataset.id,
       })
-      if (ok) location.reload()
       return
     }
 

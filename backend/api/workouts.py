@@ -15,7 +15,7 @@ from backend.repositories.completed_workout_repo import (
 )
 from backend.services.workout_service import WorkoutService
 
-DAYS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
 @dataclass
@@ -88,7 +88,7 @@ class WorkoutController(Controller):
             plan = await workout_service.get_workout_for_date(d)
             actuals = completed_by_date.get(d, [])
             result.append(WorkoutDTO(
-                day=DAYS_RU[i],
+                day=DAYS[i],
                 date=d.isoformat(),
                 type=plan.type if plan else "rest",
                 description=plan.description if plan else "—",
