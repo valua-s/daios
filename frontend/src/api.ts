@@ -135,10 +135,19 @@ export interface WorkoutDTO {
   details: Record<string, unknown>
 }
 
+export interface DisciplineSummaryDTO {
+  type: 'running' | 'cycling' | 'swimming' | 'strength'
+  unit: 'km' | 'm' | 'min'
+  planned: number
+  actual: number
+  percent: number
+}
+
 export interface WeekSummaryDTO {
   planned_km: number
   actual_km: number
   percent: number
+  disciplines: DisciplineSummaryDTO[]
 }
 
 export const getWeekWorkouts = (token?: string) =>

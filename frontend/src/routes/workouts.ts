@@ -3,7 +3,7 @@ import { getCookie } from 'hono/cookie'
 import { baseLayout } from '../layouts/base'
 import { card, sectionTitle } from '../components/card'
 import { table, badge } from '../components/table'
-import { getWeekWorkouts, getWeekSummary, type ActualWorkoutDTO, type WorkoutDTO, type WeekSummaryDTO } from '../api'
+import { getWeekWorkouts, getWeekSummary, type ActualWorkoutDTO, type WorkoutDTO, type WeekSummaryDTO, type DisciplineSummaryDTO } from '../api'
 
 export const workoutsRouter = new Hono()
 
@@ -53,11 +53,11 @@ workoutsRouter.get('/', async (c) => {
   const upcoming = workouts.filter(w => new Date(w.date) > new Date() && w.type !== 'rest').length
 
   const rows = workouts.map(w => [
-    `<span style="color:${w.is_today ? '#7c6aff' : '#888'}; font-weight:${w.is_today ? '600' : '400'};">${w.day}</span>`,
+    renderDay(w),
     badge(TYPE_LABELS[w.type], TYPE_COLORS[w.type]),
     w.duration_minutes ? `<span style="color:#666; font-size:13px;">${w.duration_minutes} min</span>` : '—',
-    renderActual(w),
     `<span style="color:${w.type === 'rest' ? '#444' : '#888'}; font-size:13px;">${w.description}</span>`,
+    renderActual(w),
     renderStatus(w),
   ])
 
@@ -96,9 +96,10 @@ workoutsRouter.get('/', async (c) => {
 
     ${card(`
       ${sectionTitle('Week')}
-      ${table(['Day', 'Type', 'Plan', 'Actual', 'Description', 'Status'], rows,
-        ['width:50px;', 'width:100px;', 'width:90px;', 'width:230px;', '', 'width:130px;'],
-        ['', 'col-type', 'col-duration', 'col-actual', '', 'col-status']
+      ${table(['Day', 'Type', 'Plan', 'Description',
+        '<span class="cw-log-full">Actual</span><span class="cw-log-short">+</span>', 'Status'], rows,
+        ['width:50px;', 'width:100px;', 'width:90px;', '', 'width:200px;', 'width:130px;'],
+        ['', 'col-type', 'col-duration', '', 'col-actual', 'col-status']
       )}
     `)}
 
@@ -124,7 +125,7 @@ const actualRow = (a: ActualWorkoutDTO, w: WorkoutDTO): string => {
        <button class="cw-del-btn" data-id="${a.id}"
          style="background:none; border:none; color:#888; cursor:pointer; font-size:13px;" title="Remove log">🗑</button>`
   return `
-    <div style="display:flex; align-items:center; gap:6px; white-space:nowrap;">
+    <div class="cw-actual-metrics" style="display:flex; align-items:center; gap:6px; white-space:nowrap;">
       <span style="color:#666; font-size:12px; min-width:62px;">${TYPE_LABELS[a.type]}</span>
       <span style="color:#3a9e6a; font-weight:600; font-size:13px;">${formatMetric(a)}</span>
       ${controls}
@@ -132,13 +133,20 @@ const actualRow = (a: ActualWorkoutDTO, w: WorkoutDTO): string => {
   `
 }
 
-const LOGGABLE = ['running', 'cycling', 'swimming', 'strength']
+const renderDay = (w: WorkoutDTO): string => {
+  const color = w.is_completed ? '#3a9e6a' : (w.is_today ? '#7c6aff' : '#888')
+  const bold = w.is_today || w.is_completed
+  return `<span style="color:${color}; font-weight:${bold ? '600' : '400'};">${w.day}</span>`
+}
+
+const LOGGABLE: string[] = ['running', 'cycling', 'swimming', 'strength']
 
 const defaultActivity = (w: WorkoutDTO): string => {
-  const logged = w.actuals.map(a => a.type)
-  const planned: string[] = LOGGABLE.includes(w.type)
-    ? [w.type]
-    : (w.details?.disciplines ?? []).filter((d: string) => LOGGABLE.includes(d))
+  const logged: string[] = w.actuals.map(a => a.type)
+  const disciplines = (w.details?.disciplines ?? []) as string[]
+  const planned = LOGGABLE.includes(w.type)
+    ? [w.type as string]
+    : disciplines.filter(d => LOGGABLE.includes(d))
   return planned.find(d => !logged.includes(d))
     ?? LOGGABLE.find(d => !logged.includes(d))
     ?? planned[0]
@@ -149,7 +157,7 @@ const renderActual = (w: WorkoutDTO): string => {
   const addBtn = w.type === 'rest' ? '' : `
     <button class="cw-mark-btn" data-date="${w.date}" data-type="${defaultActivity(w)}"
       style="background:none; border:1px dashed #555; color:#888; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:12px; align-self:flex-start;">
-      + log
+      <span class="cw-log-full">+</span><span class="cw-log-short">+</span>
     </button>
   `
 
@@ -173,9 +181,33 @@ const renderStatus = (w: WorkoutDTO): string => {
   return badge('Upcoming', '#555')
 }
 
+const progressColor = (percent: number): string => {
+  if (percent >= 100) return '#3a9e6a'
+  if (percent >= 60) return '#7c6aff'
+  return '#d97706'
+}
+
+const disciplineRow = (d: DisciplineSummaryDTO): string => {
+  const color = progressColor(d.percent)
+  return `
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span style="font-size:14px; width:20px;">${TYPE_ICONS[d.type]}</span>
+      <span style="font-size:12px; color:#888; width:70px;">${TYPE_LABELS[d.type]}</span>
+      <span style="font-size:13px; color:#e8e8e8; white-space:nowrap; width:130px;">
+        ${d.actual} / ${d.planned} ${d.unit}
+      </span>
+      <span style="flex:1; height:6px; background:#222; border-radius:3px; overflow:hidden;">
+        <span style="display:block; height:100%; width:${Math.min(100, d.percent)}%; background:${color};"></span>
+      </span>
+      <span style="font-size:12px; color:${color}; width:44px; text-align:right;">${d.percent}%</span>
+    </div>
+  `
+}
+
 const renderSummary = (s: WeekSummaryDTO): string => {
   const percent = Math.min(100, s.percent)
-  const color = s.percent >= 100 ? '#3a9e6a' : s.percent >= 60 ? '#7c6aff' : '#d97706'
+  const color = progressColor(s.percent)
+  const breakdown = (s.disciplines ?? []).filter(d => d.type !== 'running')
   return card(`
     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
       <div>
@@ -189,6 +221,11 @@ const renderSummary = (s: WeekSummaryDTO): string => {
     <div style="height:8px; background:#222; border-radius:4px; overflow:hidden;">
       <div style="height:100%; width:${percent}%; background:${color}; transition:width 0.3s;"></div>
     </div>
+    ${breakdown.length === 0 ? '' : `
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:16px; padding-top:14px; border-top:1px solid #222;">
+        ${breakdown.map(disciplineRow).join('')}
+      </div>
+    `}
   `)
 }
 
@@ -311,8 +348,11 @@ const editScript = () => `
   })
 
   document.addEventListener('click', async (e) => {
-    const t = e.target
-    if (!(t instanceof HTMLElement)) return
+    const target = e.target
+    if (!(target instanceof HTMLElement)) return
+    // Клик может прийти на span внутри кнопки.
+    const t = target.closest('button')
+    if (!t) return
 
     if (t.classList.contains('cw-mark-btn')) {
       openDialog({
