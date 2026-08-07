@@ -445,6 +445,14 @@ html {
   border: none;
   margin: 0;
 }
+#cw-distance, #cw-duration {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+#cw-distance::-webkit-outer-spin-button, #cw-distance::-webkit-inner-spin-button, #cw-duration::-webkit-outer-spin-button, #cw-duration::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 .modal-date-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -544,6 +552,19 @@ html {
     display: none;
   }
   .col-type, .col-duration {
+    display: none;
+  }
+  .cw-week-table {
+    min-width: 620px;
+  }
+  .cw-week-table .col-actual {
+    width: 250px !important;
+  }
+  .cw-week-table .col-status {
+    display: table-cell;
+    width: 110px !important;
+  }
+  .cw-disc-label {
     display: none;
   }
   .focus-history {
