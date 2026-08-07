@@ -27,9 +27,13 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+MIGRATION_LOCK_KEY = 728291133
+
+
 async def run_migrations_online() -> None:
     engine = create_async_engine(settings.database_url)
     async with engine.begin() as conn:
+        await conn.exec_driver_sql(f"SELECT pg_advisory_xact_lock({MIGRATION_LOCK_KEY})")
         await conn.run_sync(
             lambda sync_conn: context.configure(
                 connection=sync_conn,
