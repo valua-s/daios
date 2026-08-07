@@ -3,7 +3,8 @@ import { getCookie } from 'hono/cookie'
 import { baseLayout } from '../layouts/base'
 import { card, sectionTitle } from '../components/card'
 import { table, badge, iconBtn } from '../components/table'
-import { getTodayTasks, toggleTask, moveTaskToBacklog, deleteTask, getFocus, apiFetch } from '../api'
+import { getTodayTasks, toggleTask, moveTaskToBacklog, deleteTask, getFocus, getTodayStats, apiFetch } from '../api'
+import type { DayStatsDTO } from '../api'
 
 export const todayRouter = new Hono()
 
@@ -61,20 +62,34 @@ todayRouter.get('/', async (c) => {
 
   let tasks: Awaited<ReturnType<typeof getTodayTasks>>
   let focus: Awaited<ReturnType<typeof getFocus>>
+  let stats: DayStatsDTO | null = null
   try {
-    ;[tasks, focus] = await Promise.all([getTodayTasks(token), getFocus(token)])
+    ;[tasks, focus, stats] = await Promise.all([
+      getTodayTasks(token),
+      getFocus(token),
+      // Статистика не должна ронять страницу — при ошибке просто не показываем.
+      getTodayStats(token).catch(() => null),
+    ])
   } catch (e: any) {
     return c.html(baseLayout('Today', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'today'))
   }
 
   const done = tasks.filter(t => t.status === 'done').length
   const total = tasks.length
-  const pct = total > 0 ? Math.round(done / total * 100) : 0
+  const pct = stats ? stats.tasks_percent : (total > 0 ? Math.round(done / total * 100) : 0)
+
+  const workoutsCount = stats?.workouts_count ?? 0
+  const workoutVolume = stats
+    ? [
+        stats.workouts_distance_km ? `${stats.workouts_distance_km} km` : '',
+        stats.workouts_duration_minutes ? `${stats.workouts_duration_minutes} min` : '',
+      ].filter(Boolean).join(' · ')
+    : ''
 
   const statsBlock = `
     <div class="stats-desktop">
       ${card(`
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center; height:100%; align-items:center;">
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; text-align:center; height:100%; align-items:center;">
           <div style="min-width:0;">
             <div style="font-size:28px; font-weight:700; color:#7c6aff;">${done}</div>
             <div style="font-size:12px; color:#555; margin-top:4px;">Done</div>
@@ -87,6 +102,11 @@ todayRouter.get('/', async (c) => {
             <div style="font-size:28px; font-weight:700; color:#3a9e6a;">${pct}%</div>
             <div style="font-size:12px; color:#555; margin-top:4px;">Progress</div>
           </div>
+          <div style="min-width:0;">
+            <div style="font-size:28px; font-weight:700; color:#4aa3d9;">${workoutsCount}</div>
+            <div style="font-size:12px; color:#555; margin-top:4px;">Workouts</div>
+            ${workoutVolume ? `<div style="font-size:11px; color:#666; margin-top:2px; white-space:nowrap;">${workoutVolume}</div>` : ''}
+          </div>
         </div>
       `)}
     </div>
@@ -98,6 +118,10 @@ todayRouter.get('/', async (c) => {
             <div style="width:${pct}%; height:100%; background:#7c6aff; transition:width 0.4s;"></div>
           </div>
           <div style="font-size:14px; font-weight:600; color:#7c6aff; white-space:nowrap;">${done}/${total}</div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:10px; border-top:1px solid #2a2a2a; padding-top:10px;">
+          <div style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px;">Workouts</div>
+          <div style="font-size:14px; font-weight:600; color:#4aa3d9; white-space:nowrap;">${workoutsCount}${workoutVolume ? ` · ${workoutVolume}` : ''}</div>
         </div>
       `)}
     </div>

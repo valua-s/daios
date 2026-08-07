@@ -10,6 +10,7 @@ from backend.integrations.bus_schedule import BusArrival
 from backend.integrations.weather import WeatherData
 from backend.models.content import ContentItem, ContentType
 from backend.models.task import Task
+from backend.services.stats_service import DayStats
 from backend.services.wakeup_planner import WakeupPlan
 from backend.services.workout_service import WorkoutPlan
 
@@ -22,6 +23,7 @@ _DISCIPLINE_ICONS = {
     "cycling": "🚴",
     "swimming": "🏊",
     "strength": "💪",
+    "combined": "🏅",
 }
 
 _DISCIPLINE_LABELS = {
@@ -29,6 +31,7 @@ _DISCIPLINE_LABELS = {
     "cycling": "Велосипед",
     "swimming": "Плавание",
     "strength": "Силовая",
+    "combined": "Комбинированная",
 }
 
 
@@ -175,15 +178,56 @@ def format_wakeup_plan(plan: WakeupPlan) -> str:
     )
 
 
-def format_evening_summary(done: list[Task], pending: list[Task]) -> str:
+def _format_day_workouts(stats: DayStats) -> list[str]:
+    """Блок с фактическими тренировками за день."""
+    if stats.workouts_count == 0:
+        return ["🏋️ Тренировок сегодня не было."]
+
+    lines = [f"🏋️ <b>Тренировок проведено: {stats.workouts_count}</b>"]
+    for item in stats.workouts_by_type:
+        icon = _DISCIPLINE_ICONS.get(item.type, "•")
+        label = _DISCIPLINE_LABELS.get(item.type, item.type)
+        parts = []
+        if item.distance_km:
+            parts.append(f"{item.distance_km:g} км")
+        if item.duration_minutes:
+            parts.append(f"{item.duration_minutes} мин")
+        if item.count > 1:
+            parts.append(f"×{item.count}")
+        tail = f" — {' · '.join(parts)}" if parts else ""
+        lines.append(f"  {icon} {label}{tail}")
+
+    totals = []
+    if stats.workouts_distance_km:
+        totals.append(f"{stats.workouts_distance_km:g} км")
+    if stats.workouts_duration_minutes:
+        totals.append(f"{stats.workouts_duration_minutes} мин")
+    if totals and len(stats.workouts_by_type) > 1:
+        lines.append(f"  Итого: {' · '.join(totals)}")
+
+    return lines
+
+
+def format_evening_summary(
+    done: list[Task],
+    pending: list[Task],
+    stats: DayStats | None = None,
+) -> str:
     total = len(done) + len(pending)
     lines = ["🌙 <b>Итоги дня</b>\n"]
 
     if total == 0:
         lines.append("📋 Сегодня задач не было.")
+        if stats is not None:
+            lines.extend(("", *_format_day_workouts(stats)))
         return "\n".join(lines)
 
-    lines.append(f"✅ Выполнено: {len(done)}/{total}\n")
+    percent = stats.tasks_percent if stats else round(len(done) / total * 100)
+    lines.append(f"✅ Выполнено задач: {len(done)}/{total} ({percent}%)")
+
+    if stats is not None:
+        lines.extend(("", *_format_day_workouts(stats)))
+    lines.append("")
 
     if done:
         lines.append("<b>Сделано:</b>")

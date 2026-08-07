@@ -86,7 +86,7 @@ class Orchestrator(BaseAgent):
         done = state.get("done_tasks", [])
         pending = state.get("pending_tasks", [])
 
-        text = format_evening_summary(done, pending)
+        text = format_evening_summary(done, pending, state.get("day_stats"))
         await self._notifier.send(text)
 
         for task in pending:

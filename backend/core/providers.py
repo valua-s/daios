@@ -40,6 +40,7 @@ from backend.services.focus_service import FocusService
 from backend.services.llm_service import LLMService
 from backend.services.note_service import NoteService
 from backend.services.settings_service import SettingsService
+from backend.services.stats_service import StatsService
 from backend.services.strava_service import StravaService
 from backend.services.task_service import TaskService
 from backend.services.wakeup_planner import WakeupPlanner
@@ -162,6 +163,10 @@ class AppProvider(Provider):
         return TaskService(session)
 
     @provide(scope=Scope.REQUEST)
+    def get_stats_service(self, session: AsyncSession) -> StatsService:  # noqa: PLR6301
+        return StatsService(session)
+
+    @provide(scope=Scope.REQUEST)
     def get_settings_service(self, session: AsyncSession, redis: Redis) -> SettingsService:  # noqa: PLR6301
         return SettingsService(session, redis)
 
@@ -231,8 +236,10 @@ class AppProvider(Provider):
         return ContentAgent(content_service, focus_resolver, llm_service)
 
     @provide(scope=Scope.REQUEST)
-    def get_evening_agent(self, task_service: TaskService) -> EveningAgent:  # noqa: PLR6301
-        return EveningAgent(task_service)
+    def get_evening_agent(  # noqa: PLR6301
+        self, task_service: TaskService, stats_service: StatsService
+    ) -> EveningAgent:
+        return EveningAgent(task_service, stats_service)
 
     @provide(scope=Scope.REQUEST)
     def get_wakeup_planner(  # noqa: PLR6301

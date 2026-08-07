@@ -14,6 +14,7 @@ from backend.api.diary import DiaryController
 from backend.api.focus import FocusController
 from backend.api.notes import NotesController
 from backend.api.settings import SettingsController
+from backend.api.stats import StatsController
 from backend.api.tasks import TaskController
 from backend.api.workouts import WorkoutController
 from backend.auth.api.auth import AuthController
@@ -35,7 +36,7 @@ async def _main() -> None:
     protected_router = DishkaRouter(
         path="",
         guards=[jwt_auth_guard],
-        route_handlers=[TaskController, BacklogController, FocusController, WorkoutController, SettingsController, NotesController, DiaryController, DebugController],
+        route_handlers=[TaskController, BacklogController, FocusController, WorkoutController, SettingsController, NotesController, DiaryController, StatsController, DebugController],
     )
     auth_router = DishkaRouter(
         path="",
