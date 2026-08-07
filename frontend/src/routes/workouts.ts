@@ -48,9 +48,10 @@ workoutsRouter.get('/', async (c) => {
   }
 
   const todayWorkout = workouts.find(w => w.is_today)
-  const weekDone = workouts.filter(w => w.actuals.length > 0).length
+  const weekDone = workouts.filter(w => w.type !== 'rest' && w.actuals.length > 0).length
   const totalPlanned = workouts.filter(w => w.type !== 'rest').length
   const upcoming = workouts.filter(w => new Date(w.date) > new Date() && w.type !== 'rest').length
+  const plannedMinutes = workouts.reduce((sum, w) => sum + w.duration_minutes, 0)
 
   const rows = workouts.map(w => [
     renderDay(w),
@@ -90,16 +91,16 @@ workoutsRouter.get('/', async (c) => {
 
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px;">
       ${statMini('Completed', `${weekDone} / ${totalPlanned}`, '#7c6aff')}
-      ${statMini('Running plan', `${summary.planned_km} km`, '#3a9e6a')}
+      ${statMini('Planned time', `${plannedMinutes} min`, '#3a9e6a')}
       ${statMini('Left', `${upcoming} sessions`, '#d97706')}
     </div>
 
     ${card(`
       ${sectionTitle('Week')}
-      ${table(['Day', 'Type', 'Plan', 'Description',
-        '<span class="cw-log-full">Actual</span><span class="cw-log-short">+</span>', 'Status'], rows,
-        ['width:50px;', 'width:100px;', 'width:90px;', '', 'width:200px;', 'width:130px;'],
-        ['', 'col-type', 'col-duration', '', 'col-actual', 'col-status']
+      ${table(['Day', 'Type', 'Plan', 'Description', 'Actual', 'Status'], rows,
+        ['width:50px;', 'width:100px;', 'width:90px;', '', 'width:250px;', 'width:130px;'],
+        ['', 'col-type', 'col-duration', '', 'col-actual', 'col-status'],
+        'cw-week-table'
       )}
     `)}
 
@@ -154,17 +155,14 @@ const defaultActivity = (w: WorkoutDTO): string => {
 }
 
 const renderActual = (w: WorkoutDTO): string => {
-  const addBtn = w.type === 'rest' ? '' : `
+  const addBtn = `
     <button class="cw-mark-btn" data-date="${w.date}" data-type="${defaultActivity(w)}"
       style="background:none; border:1px dashed #555; color:#888; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:12px; align-self:flex-start;">
-      <span class="cw-log-full">+</span><span class="cw-log-short">+</span>
+      +
     </button>
   `
 
-  if (w.actuals.length === 0) {
-    if (w.type === 'rest') return '<span style="color:#444;">—</span>'
-    return addBtn
-  }
+  if (w.actuals.length === 0) return addBtn
 
   return `
     <div style="display:flex; flex-direction:column; gap:4px;">
@@ -192,12 +190,12 @@ const disciplineRow = (d: DisciplineSummaryDTO): string => {
   return `
     <div style="display:flex; align-items:center; gap:10px;">
       <span style="font-size:14px; width:20px;">${TYPE_ICONS[d.type]}</span>
-      <span style="font-size:12px; color:#888; width:70px;">${TYPE_LABELS[d.type]}</span>
+      <span class="cw-disc-label" style="font-size:12px; color:#888; width:70px;">${TYPE_LABELS[d.type]}</span>
       <span style="font-size:13px; color:#e8e8e8; white-space:nowrap; width:130px;">
         ${d.actual} / ${d.planned} ${d.unit}
       </span>
-      <span style="flex:1; height:6px; background:#222; border-radius:3px; overflow:hidden;">
-        <span style="display:block; height:100%; width:${Math.min(100, d.percent)}%; background:${color};"></span>
+      <span style="flex:1; min-width:40px; height:8px; background:#222; border-radius:4px; overflow:hidden;">
+        <span style="display:block; height:100%; width:${Math.min(100, d.percent)}%; background:${color}; transition:width 0.3s;"></span>
       </span>
       <span style="font-size:12px; color:${color}; width:44px; text-align:right;">${d.percent}%</span>
     </div>
@@ -205,27 +203,17 @@ const disciplineRow = (d: DisciplineSummaryDTO): string => {
 }
 
 const renderSummary = (s: WeekSummaryDTO): string => {
-  const percent = Math.min(100, s.percent)
-  const color = progressColor(s.percent)
-  const breakdown = (s.disciplines ?? []).filter(d => d.type !== 'running')
+  const disciplines = s.disciplines ?? []
+  const body = disciplines.length === 0
+    ? '<div style="font-size:13px; color:#444; margin-top:12px;">No plan for this week</div>'
+    : `
+      <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
+        ${disciplines.map(disciplineRow).join('')}
+      </div>
+    `
   return card(`
-    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
-      <div>
-        <div style="font-size:11px; color:#7c6aff; text-transform:uppercase; letter-spacing:0.5px;">Weekly running volume</div>
-        <div style="font-size:20px; font-weight:700; color:#e8e8e8; margin-top:4px;">
-          ${s.actual_km} / ${s.planned_km} km
-        </div>
-      </div>
-      <div style="font-size:22px; font-weight:700; color:${color};">${s.percent}%</div>
-    </div>
-    <div style="height:8px; background:#222; border-radius:4px; overflow:hidden;">
-      <div style="height:100%; width:${percent}%; background:${color}; transition:width 0.3s;"></div>
-    </div>
-    ${breakdown.length === 0 ? '' : `
-      <div style="display:flex; flex-direction:column; gap:8px; margin-top:16px; padding-top:14px; border-top:1px solid #222;">
-        ${breakdown.map(disciplineRow).join('')}
-      </div>
-    `}
+    <div style="font-size:11px; color:#7c6aff; text-transform:uppercase; letter-spacing:0.5px;">Weekly volume</div>
+    ${body}
   `)
 }
 
@@ -235,41 +223,72 @@ const statMini = (label: string, value: string, color: string) =>
     <div style="font-size:12px; color:#555; margin-top:2px;">${label}</div>
   `)
 
+const FIELD_STYLE = `
+  width:100%; box-sizing:border-box;
+  background:#111; border:1px solid #2a2a2a; border-radius:6px;
+  color:#e8e8e8; font-size:14px; padding:10px 12px;
+  outline:none; font-family:inherit;
+`
+
+const FIELD_LABEL_STYLE =
+  'font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;'
+
 const logDialog = () => `
-<dialog id="cw-dialog" style="background:#141414; border:1px solid #2a2a2a; border-radius:8px; padding:20px; color:#e8e8e8; width:300px;">
-  <form method="dialog" id="cw-form" style="display:flex; flex-direction:column; gap:12px;">
-    <div id="cw-dialog-title" style="font-size:15px; font-weight:600;">Log workout</div>
-
-    <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:#888;">
-      Activity
-      <select id="cw-activity" style="background:#1c1c1c; border:1px solid #2a2a2a; border-radius:4px; color:#e8e8e8; padding:6px; font-size:13px;">
-        <option value="running">Running</option>
-        <option value="cycling">Cycling</option>
-        <option value="swimming">Swimming</option>
-        <option value="strength">Strength</option>
-      </select>
-    </label>
-
-    <label id="cw-distance-row" style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:#888;">
-      <span id="cw-distance-label">Distance, km</span>
-      <input id="cw-distance" type="number" step="0.01" min="0" inputmode="decimal"
-        style="background:#1c1c1c; border:1px solid #2a2a2a; border-radius:4px; color:#e8e8e8; padding:6px; font-size:13px;">
-    </label>
-
-    <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:#888;">
-      Duration, min
-      <input id="cw-duration" type="number" step="1" min="0" inputmode="numeric"
-        style="background:#1c1c1c; border:1px solid #2a2a2a; border-radius:4px; color:#e8e8e8; padding:6px; font-size:13px;">
-    </label>
-
-    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:4px;">
-      <button value="cancel" type="submit"
-        style="background:none; border:1px solid #2a2a2a; color:#888; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px;">Cancel</button>
-      <button value="save" type="submit" id="cw-save"
-        style="background:#7c6aff; border:none; color:#fff; padding:6px 14px; border-radius:4px; cursor:pointer; font-size:13px;">Save</button>
+<div id="cw-modal" onclick="if(event.target===this)cwCloseDialog()" style="
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+  z-index:200; align-items:center; justify-content:center; padding:16px;
+">
+  <div style="
+    background:#181818; border:1px solid #2a2a2a; border-radius:12px;
+    padding:28px; width:100%; max-width:420px; box-sizing:border-box;
+  ">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+      <h2 id="cw-dialog-title" style="margin:0; font-size:16px; font-weight:600; color:#e8e8e8;">Log workout</h2>
+      <button type="button" onclick="cwCloseDialog()" style="
+        background:none; border:none; cursor:pointer;
+        color:#555; font-size:20px; line-height:1; padding:2px 6px;
+      ">✕</button>
     </div>
-  </form>
-</dialog>
+
+    <form id="cw-form" style="display:flex; flex-direction:column; gap:16px;">
+      <div>
+        <label style="${FIELD_LABEL_STYLE}">Activity</label>
+        <select id="cw-activity" style="${FIELD_STYLE} color-scheme:dark;"
+          onfocus="this.style.borderColor='#7c6aff'" onblur="this.style.borderColor='#2a2a2a'">
+          <option value="running">Running</option>
+          <option value="cycling">Cycling</option>
+          <option value="swimming">Swimming</option>
+          <option value="strength">Strength</option>
+        </select>
+      </div>
+
+      <div id="cw-distance-row">
+        <label id="cw-distance-label" style="${FIELD_LABEL_STYLE}">Distance, km</label>
+        <input id="cw-distance" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0"
+          style="${FIELD_STYLE}"
+          onfocus="this.style.borderColor='#7c6aff'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+
+      <div>
+        <label style="${FIELD_LABEL_STYLE}">Duration, min</label>
+        <input id="cw-duration" type="number" step="1" min="0" inputmode="numeric" placeholder="0"
+          style="${FIELD_STYLE}"
+          onfocus="this.style.borderColor='#7c6aff'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:4px;">
+        <button type="button" onclick="cwCloseDialog()" style="
+          padding:9px 18px; border-radius:6px; font-size:13px; font-weight:500;
+          background:transparent; color:#666; border:1px solid #2a2a2a; cursor:pointer;
+        ">Cancel</button>
+        <button type="submit" style="
+          padding:9px 18px; border-radius:6px; font-size:13px; font-weight:500;
+          background:#7c6aff; color:#fff; border:none; cursor:pointer;
+        ">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
 `
 
 const editScript = () => `
@@ -289,7 +308,7 @@ const editScript = () => `
     if (!res.ok && res.status !== 204) { alert('Error: ' + res.status); return false }
     return true
   }
-  const dialog = document.getElementById('cw-dialog')
+  const modal = document.getElementById('cw-modal')
   const form = document.getElementById('cw-form')
   const activityEl = document.getElementById('cw-activity')
   const distanceEl = document.getElementById('cw-distance')
@@ -301,9 +320,17 @@ const editScript = () => `
   let editId = null
   let editType = null
 
+  window.cwCloseDialog = function() {
+    modal.style.display = 'none'
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display === 'flex') window.cwCloseDialog()
+  })
+
   function syncFields() {
     const type = activityEl.value
-    distanceRow.style.display = type === 'strength' ? 'none' : 'flex'
+    distanceRow.style.display = type === 'strength' ? 'none' : 'block'
     if (type === 'swimming') {
       distanceLabel.textContent = 'Distance, m'
       distanceEl.step = '10'
@@ -324,12 +351,11 @@ const editScript = () => `
     const km = opts.km != null ? parseFloat(opts.km) : 0
     distanceEl.value = opts.km == null ? '' : (opts.type === 'swimming' ? Math.round(km * 1000) : km)
     durationEl.value = opts.mins != null ? opts.mins : ''
-    dialog.showModal()
+    modal.style.display = 'flex'
     durationEl.focus()
   }
 
   form.addEventListener('submit', async (e) => {
-    if (e.submitter && e.submitter.value !== 'save') return
     e.preventDefault()
     const type = activityEl.value
     const rawDistance = parseFloat((distanceEl.value || '0').replace(',', '.'))

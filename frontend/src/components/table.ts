@@ -1,6 +1,6 @@
-export const table = (headers: string[], rows: string[][], columnStyles?: string[], columnClasses?: string[]) => `
-  <div style="overflow-x:auto;">
-    <table style="width:100%; border-collapse:collapse; font-size:14px; table-layout:fixed;">
+export const table = (headers: string[], rows: string[][], columnStyles?: string[], columnClasses?: string[], tableClass = '') => `
+  <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+    <table class="${tableClass}" style="width:100%; border-collapse:collapse; font-size:14px; table-layout:fixed;">
       <thead>
         <tr style="border-bottom:1px solid #2a2a2a;">
           ${headers.map((h, i) => `<th class="${columnClasses?.[i] ?? ''}" style="text-align:left; padding:10px 12px; color:#666; font-weight:500; white-space:nowrap; ${columnStyles?.[i] ?? ''}">${h}</th>`).join('')}

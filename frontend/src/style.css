@@ -318,10 +318,18 @@ html {
   margin: 0;
 }
 
-/* ── Workouts: компактный факт ── */
+#cw-distance,
+#cw-duration {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
 
-.cw-log-short {
-  display: none;
+#cw-distance::-webkit-outer-spin-button,
+#cw-distance::-webkit-inner-spin-button,
+#cw-duration::-webkit-outer-spin-button,
+#cw-duration::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /* ── Modal date/time grid ── */
@@ -450,29 +458,26 @@ html {
     display: none;
   }
 
-  /* workouts: цифры факта не влезают — выполненный день красится зелёным
-     в колонке Day, в Actual остаётся только кнопка «+» */
   .col-type,
   .col-duration {
     display: none;
   }
 
-  .col-actual {
-    width: 44px !important;
-    padding-left: 4px !important;
-    padding-right: 4px !important;
+  .cw-week-table {
+    min-width: 620px;
   }
 
-  .cw-actual-metrics {
+  .cw-week-table .col-actual {
+    width: 250px !important;
+  }
+
+  .cw-week-table .col-status {
+    display: table-cell;
+    width: 110px !important;
+  }
+
+  .cw-disc-label {
     display: none;
-  }
-
-  .cw-log-full {
-    display: none;
-  }
-
-  .cw-log-short {
-    display: inline;
   }
 
   /* focus */

@@ -40,6 +40,23 @@ def _has_index(insp: sa.engine.reflection.Inspector, table: str, name: str) -> b
     return any(i["name"] == name for i in insp.get_indexes(table))
 
 
+# naming_convention добавляет префикс "ck_schedules_" к переданному имени,
+# поэтому в БД констрейнт мог осесть под удвоенным именем.
+_EVENT_NAME_CHECKS = (
+    "ck_schedules_event_name",
+    "ck_schedules_ck_schedules_event_name",
+)
+
+
+def _reset_event_name_check(names: tuple[str, ...]) -> None:
+    for constraint in _EVENT_NAME_CHECKS:
+        op.execute(f'ALTER TABLE schedules DROP CONSTRAINT IF EXISTS "{constraint}"')
+    op.execute(
+        "ALTER TABLE schedules ADD CONSTRAINT ck_schedules_event_name "
+        f"CHECK (event_name IN ({_quoted_list(names)}))"
+    )
+
+
 def _has_constraint(bind: sa.Connection, name: str) -> bool:
     return bool(
         bind.execute(
@@ -90,13 +107,7 @@ def upgrade() -> None:
             postgresql_where=sa.text("source = 'manual'"),
         )
 
-    if _has_constraint(bind, "ck_schedules_event_name"):
-        op.drop_constraint("ck_schedules_event_name", "schedules", type_="check")
-    op.create_check_constraint(
-        "ck_schedules_event_name",
-        "schedules",
-        f"event_name IN ({_quoted_list(_EVENT_NAMES_NEW)})",
-    )
+    _reset_event_name_check(_EVENT_NAMES_NEW)
 
 
 def downgrade() -> None:
@@ -104,13 +115,7 @@ def downgrade() -> None:
     insp = sa.inspect(bind)
 
     op.execute("DELETE FROM schedules WHERE event_name = 'sync_strava'")
-    if _has_constraint(bind, "ck_schedules_event_name"):
-        op.drop_constraint("ck_schedules_event_name", "schedules", type_="check")
-    op.create_check_constraint(
-        "ck_schedules_event_name",
-        "schedules",
-        f"event_name IN ({_quoted_list(_EVENT_NAMES_OLD)})",
-    )
+    _reset_event_name_check(_EVENT_NAMES_OLD)
 
     op.execute("DELETE FROM completed_workouts WHERE source = 'strava'")
     op.execute(
