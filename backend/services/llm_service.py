@@ -42,7 +42,7 @@ class LLMService:
             openai_api_base=cfg.openai_base_url,
             temperature=0.3,
             max_tokens=1024,
-            http_async_client=httpx.AsyncClient(proxy=Settings.telegram_socks_proxy, timeout=60)
+            http_async_client=httpx.AsyncClient(proxy=cfg.telegram_socks_proxy, timeout=60)
         )
 
     async def generate_search_queries(
