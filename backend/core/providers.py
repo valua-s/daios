@@ -17,7 +17,6 @@ from backend.auth.service.auth_service import AuthService
 from backend.core.config import Settings, get_settings
 from backend.core.db import AsyncSessionFactory
 from backend.core.redis import create_redis
-from backend.integrations.bus_schedule import BusScheduleParser
 from backend.integrations.google_sheets import GoogleSheetsClient
 from backend.integrations.news import NewsClient
 from backend.integrations.rss import RSSParser
@@ -40,6 +39,7 @@ from backend.services.focus_service import FocusService
 from backend.services.llm_service import LLMService
 from backend.services.note_service import NoteService
 from backend.services.settings_service import SettingsService
+from backend.services.stats_service import StatsService
 from backend.services.strava_service import StravaService
 from backend.services.task_service import TaskService
 from backend.services.wakeup_planner import WakeupPlanner
@@ -82,10 +82,6 @@ class AppProvider(Provider):
         return WeatherClient(http_client)
 
     @provide(scope=Scope.APP)
-    def get_bus_parser(self, http_client: httpx.AsyncClient) -> BusScheduleParser:  # noqa: PLR6301
-        return BusScheduleParser(http_client)
-
-    @provide(scope=Scope.APP)
     def get_rss_parser(self) -> RSSParser:  # noqa: PLR6301
         return RSSParser()
 
@@ -102,8 +98,10 @@ class AppProvider(Provider):
         return NewsClient(http_client, cfg.news_api_key)
 
     @provide(scope=Scope.APP)
-    def get_llm_service(self, cfg: Settings) -> LLMService:  # noqa: PLR6301
-        return LLMService(cfg)
+    async def get_llm_service(self, cfg: Settings) -> AsyncIterator[LLMService]:  # noqa: PLR6301
+        # trust_env=True (по умолчанию) — учитываются HTTP(S)_PROXY из окружения.
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            yield LLMService(cfg, client)
 
     @provide(scope=Scope.REQUEST)
     async def get_session(self) -> AsyncIterator[AsyncSession]:  # noqa: PLR6301
@@ -162,6 +160,10 @@ class AppProvider(Provider):
         return TaskService(session)
 
     @provide(scope=Scope.REQUEST)
+    def get_stats_service(self, session: AsyncSession) -> StatsService:  # noqa: PLR6301
+        return StatsService(session)
+
+    @provide(scope=Scope.REQUEST)
     def get_settings_service(self, session: AsyncSession, redis: Redis) -> SettingsService:  # noqa: PLR6301
         return SettingsService(session, redis)
 
@@ -187,12 +189,8 @@ class AppProvider(Provider):
         return StravaService(session, completed_repo, strava_client)
 
     @provide(scope=Scope.REQUEST)
-    def get_context_agent(  # noqa: PLR6301
-        self,
-        weather_client: WeatherClient,
-        bus_parser: BusScheduleParser,
-    ) -> ContextAgent:
-        return ContextAgent(weather_client, bus_parser)
+    def get_context_agent(self, weather_client: WeatherClient) -> ContextAgent:  # noqa: PLR6301
+        return ContextAgent(weather_client)
 
     @provide(scope=Scope.REQUEST)
     def get_task_agent(self, task_service: TaskService) -> TaskAgent:  # noqa: PLR6301
@@ -231,8 +229,10 @@ class AppProvider(Provider):
         return ContentAgent(content_service, focus_resolver, llm_service)
 
     @provide(scope=Scope.REQUEST)
-    def get_evening_agent(self, task_service: TaskService) -> EveningAgent:  # noqa: PLR6301
-        return EveningAgent(task_service)
+    def get_evening_agent(  # noqa: PLR6301
+        self, task_service: TaskService, stats_service: StatsService
+    ) -> EveningAgent:
+        return EveningAgent(task_service, stats_service)
 
     @provide(scope=Scope.REQUEST)
     def get_wakeup_planner(  # noqa: PLR6301

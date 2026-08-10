@@ -32,7 +32,6 @@ dependencies = [
     "feedparser>=6.0",
     "gspread>=6.1",
     "google-auth>=2.29",
-    "beautifulsoup4>=4.12",
     "dishka>=1.9.1",
     "valkey>=6.1.1",
     "pytz>=2026.1.post1",

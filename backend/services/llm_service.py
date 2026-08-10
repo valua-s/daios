@@ -6,6 +6,7 @@ import logging
 import re
 from dataclasses import dataclass
 
+import httpx
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
@@ -35,14 +36,16 @@ class ContentCandidate:
 class LLMService:
     """OpenRouter LLM wrapper — генерация поисковых запросов и выбор контента."""
 
-    def __init__(self, cfg: Settings) -> None:
+    def __init__(self, cfg: Settings, http_client: httpx.AsyncClient) -> None:
+        # Свой httpx-клиент: иначе langchain-openai подставляет собственный transport
+        # (TCP keepalive) и ломает автоопределение системного прокси.
         self._llm = ChatOpenAI(
             model=cfg.llm_model_agents,  # ty:ignore[unknown-argument]
             openai_api_key=cfg.openai_api_key.get_secret_value(),  # ty:ignore[invalid-argument-type]
             openai_api_base=cfg.openai_base_url,
             temperature=0.3,
             max_tokens=1024,
-            http_async_client=httpx.AsyncClient(proxy=cfg.telegram_socks_proxy, timeout=60)
+            http_async_client=http_client,
         )
 
     async def generate_search_queries(

@@ -93,9 +93,6 @@ class Settings(BaseSettings):
     openweather_api_key: str = Field(..., description="OpenWeatherMap API key")
     openweather_city: str = "Almaty"
 
-    # Bus schedule
-    bus_schedule_url: str = Field(..., description="URL страницы с расписанием автобусов")
-
     # YouTube Data API v3
     youtube_api_key: str = Field("", description="YouTube Data API v3 key")
 

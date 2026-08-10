@@ -175,6 +175,34 @@ export const deleteCompletedWorkout = (completedId: number, token?: string) =>
     method: 'DELETE',
   }, token)
 
+// ── Stats ──────────────────────────────────────────────────────────────────
+
+export interface WorkoutTypeStatsDTO {
+  type: 'running' | 'cycling' | 'swimming' | 'strength' | 'combined'
+  count: number
+  distance_km: number
+  duration_minutes: number
+}
+
+export interface DayStatsDTO {
+  date: string
+  tasks_total: number
+  tasks_done: number
+  tasks_pending: number
+  tasks_cancelled: number
+  tasks_percent: number
+  workouts_count: number
+  workouts_distance_km: number
+  workouts_duration_minutes: number
+  workouts_by_type: WorkoutTypeStatsDTO[]
+}
+
+export const getTodayStats = (token?: string) =>
+  apiFetch<DayStatsDTO>('/api/stats/today', undefined, token)
+
+export const getDayStats = (date: string, token?: string) =>
+  apiFetch<DayStatsDTO>(`/api/stats/day?date=${date}`, undefined, token)
+
 // ── Settings ───────────────────────────────────────────────────────────────
 
 export interface ScheduleDTO {
