@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from backend.integrations.bus_schedule import BusArrival
 from backend.integrations.weather import WeatherData
 from backend.models.content import ContentItem, ContentType
 from backend.models.task import Task
@@ -88,7 +87,6 @@ def format_morning_brief(
     tasks: list[Task],
     workout: WorkoutPlan | None,
     weather: WeatherData | None = None,
-    bus_schedule: list[BusArrival] | None = None,
     content_items: list[ContentItem] | None = None,
     *,
     is_weekend: bool = False,
@@ -101,14 +99,7 @@ def format_morning_brief(
             f"{weather.description}, ветер {weather.wind_speed} м/с\n"
         )
 
-    if not is_weekend:
-        if bus_schedule:
-            lines.append("🚌 <b>Ближайшие автобусы:</b>")
-            for bus in bus_schedule:
-                t = bus.departure_time.strftime("%H:%M")
-                lines.append(f"  {t} (через {bus.minutes_until} мин) — №{bus.bus_numbers}")
-            lines.append("")
-    else:
+    if is_weekend:
         lines.append(format_workout(workout) + "\n")
 
     if tasks:
@@ -129,7 +120,6 @@ def format_evening_brief(
     today: date,
     workout: WorkoutPlan | None,
     tasks: list[Task],
-    bus_schedule: list[BusArrival] | None = None,
     content_items: list[ContentItem] | None = None,
     *,
     is_weekend: bool = False,
@@ -137,12 +127,6 @@ def format_evening_brief(
     lines = [f"🌇 <b>Добрый вечер! {today.strftime('%d.%m.%Y')}</b>\n"]
 
     if not is_weekend:
-        if bus_schedule:
-            lines.append("🚌 <b>Ближайшие автобусы:</b>")
-            for bus in bus_schedule:
-                t = bus.departure_time.strftime("%H:%M")
-                lines.append(f"  {t} (через {bus.minutes_until} мин) — №{bus.bus_numbers}")
-            lines.append("")
         lines.append(format_workout(workout) + "\n")
 
     if tasks:

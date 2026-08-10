@@ -120,7 +120,6 @@ class Orchestrator(BaseAgent):
             workout=state.get("workout"),
             tasks=state.get("tasks", []),
             weather=state.get("weather"),
-            bus_schedule=state.get("bus_schedule", []),
             is_weekend=state.get("is_weekend", False),
             content_items=all_items[:3],
         )
@@ -132,7 +131,6 @@ class Orchestrator(BaseAgent):
             today=datetime.now(ZoneInfo(settings.app_timezone)).date(),
             workout=state.get("workout"),
             tasks=state.get("tasks", []),
-            bus_schedule=state.get("bus_schedule", []),
             is_weekend=state.get("is_weekend", False),
             content_items=all_items[3:],
         )

@@ -17,7 +17,6 @@ from backend.auth.service.auth_service import AuthService
 from backend.core.config import Settings, get_settings
 from backend.core.db import AsyncSessionFactory
 from backend.core.redis import create_redis
-from backend.integrations.bus_schedule import BusScheduleParser
 from backend.integrations.google_sheets import GoogleSheetsClient
 from backend.integrations.news import NewsClient
 from backend.integrations.rss import RSSParser
@@ -83,10 +82,6 @@ class AppProvider(Provider):
         return WeatherClient(http_client)
 
     @provide(scope=Scope.APP)
-    def get_bus_parser(self, http_client: httpx.AsyncClient) -> BusScheduleParser:  # noqa: PLR6301
-        return BusScheduleParser(http_client)
-
-    @provide(scope=Scope.APP)
     def get_rss_parser(self) -> RSSParser:  # noqa: PLR6301
         return RSSParser()
 
@@ -103,8 +98,10 @@ class AppProvider(Provider):
         return NewsClient(http_client, cfg.news_api_key)
 
     @provide(scope=Scope.APP)
-    def get_llm_service(self, cfg: Settings) -> LLMService:  # noqa: PLR6301
-        return LLMService(cfg)
+    async def get_llm_service(self, cfg: Settings) -> AsyncIterator[LLMService]:  # noqa: PLR6301
+        # trust_env=True (по умолчанию) — учитываются HTTP(S)_PROXY из окружения.
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            yield LLMService(cfg, client)
 
     @provide(scope=Scope.REQUEST)
     async def get_session(self) -> AsyncIterator[AsyncSession]:  # noqa: PLR6301
@@ -192,12 +189,8 @@ class AppProvider(Provider):
         return StravaService(session, completed_repo, strava_client)
 
     @provide(scope=Scope.REQUEST)
-    def get_context_agent(  # noqa: PLR6301
-        self,
-        weather_client: WeatherClient,
-        bus_parser: BusScheduleParser,
-    ) -> ContextAgent:
-        return ContextAgent(weather_client, bus_parser)
+    def get_context_agent(self, weather_client: WeatherClient) -> ContextAgent:  # noqa: PLR6301
+        return ContextAgent(weather_client)
 
     @provide(scope=Scope.REQUEST)
     def get_task_agent(self, task_service: TaskService) -> TaskAgent:  # noqa: PLR6301
