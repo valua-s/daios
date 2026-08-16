@@ -115,7 +115,6 @@ settingsRouter.get('/', async (c) => {
     evening_summary: 'Evening summary',
     collect_content: 'Content collection',
     sync_workouts: 'Workout sync',
-    sync_strava: 'Strava sync',
     evening_brief: 'Evening brief',
     midnight_backlog: 'Move to backlog',
     tasks_reminder: 'Task reminder',
