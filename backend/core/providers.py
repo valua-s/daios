@@ -99,8 +99,7 @@ class AppProvider(Provider):
 
     @provide(scope=Scope.APP)
     async def get_llm_service(self, cfg: Settings) -> AsyncIterator[LLMService]:  # noqa: PLR6301
-        # trust_env=True (по умолчанию) — учитываются HTTP(S)_PROXY из окружения.
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=60.0, proxy=cfg.telegram_socks_proxy) as client:
             yield LLMService(cfg, client)
 
     @provide(scope=Scope.REQUEST)

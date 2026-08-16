@@ -37,8 +37,6 @@ class LLMService:
     """OpenRouter LLM wrapper — генерация поисковых запросов и выбор контента."""
 
     def __init__(self, cfg: Settings, http_client: httpx.AsyncClient) -> None:
-        # Свой httpx-клиент: иначе langchain-openai подставляет собственный transport
-        # (TCP keepalive) и ломает автоопределение системного прокси.
         self._llm = ChatOpenAI(
             model=cfg.llm_model_agents,  # ty:ignore[unknown-argument]
             openai_api_key=cfg.openai_api_key.get_secret_value(),  # ty:ignore[invalid-argument-type]
