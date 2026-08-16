@@ -35,7 +35,6 @@ DEFAULT_SCHEDULES: list[dict] = [
     {"event_name": "evening_summary", "cron_expr": "0 20 * * *", "enabled": True, "description": "Вечерний итог"},
     {"event_name": "collect_content", "cron_expr": "0 6 * * *", "enabled": True, "description": "Сбор контента"},
     {"event_name": "sync_workouts", "cron_expr": "0 6,17 * * *", "enabled": True, "description": "Синхронизация тренировок"},
-    {"event_name": "sync_strava", "cron_expr": "10 8,12,16,20,23 * * *", "enabled": True, "description": "Синхронизация Strava"},
     {"event_name": "evening_brief", "cron_expr": "30 16 * * *", "enabled": True, "description": "Вечерняя сводка"},
     {"event_name": "midnight_backlog", "cron_expr": "0 0 * * *", "enabled": True, "description": "Перенос невыполненных в бэклог"},
     {"event_name": "tasks_reminder", "cron_expr": "0 9 * * *", "enabled": True, "description": "Напоминание добавить задачи"},

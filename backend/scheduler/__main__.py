@@ -19,7 +19,6 @@ from backend.scheduler.jobs import (
     make_evening_summary,
     make_midnight_backlog,
     make_morning_brief,
-    make_sync_strava,
     make_sync_workouts,
     make_tasks_reminder,
 )
@@ -41,7 +40,6 @@ JOB_FACTORIES: dict[str, Callable[[AsyncContainer], Callable]] = {
     "evening_summary": make_evening_summary,
     "collect_content": make_collect_content,
     "sync_workouts": make_sync_workouts,
-    "sync_strava": make_sync_strava,
     "evening_brief": make_evening_brief,
     "midnight_backlog": make_midnight_backlog,
     "tasks_reminder": make_tasks_reminder,
@@ -180,10 +178,6 @@ async def main() -> None:
     # Немедленная синхронизация тренировок при старте
     logger.info("Running initial workout sync...")
     await make_sync_workouts(container)()
-
-    if settings.strava_enabled:
-        logger.info("Running initial Strava sync...")
-        await make_sync_strava(container)()
 
     # Запускаем слушатель Redis для hot-reload
     reload_task = asyncio.create_task(listen_for_reload(redis, scheduler, container))
