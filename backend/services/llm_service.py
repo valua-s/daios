@@ -33,18 +33,24 @@ class ContentCandidate:
     type: str  # "article" | "video"
 
 
+@dataclass
+class SearchQueryList:
+    q: list[SearchQuery]
+
+
 class LLMService:
     """OpenRouter LLM wrapper — генерация поисковых запросов и выбор контента."""
 
     def __init__(self, cfg: Settings, http_client: httpx.AsyncClient) -> None:
-        self._llm = ChatOpenAI(
+        self._llm: ChatOpenAI = ChatOpenAI(
             model=cfg.llm_model_agents,  # ty:ignore[unknown-argument]
             openai_api_key=cfg.openai_api_key.get_secret_value(),  # ty:ignore[invalid-argument-type]
             openai_api_base=cfg.openai_base_url,
-            temperature=0.3,
+            temperature=0,
             max_tokens=1024,
             http_async_client=http_client,
         )
+        self._schema = {}
 
     async def generate_search_queries(
         self, focus_description: str, topics: list[str],
@@ -71,21 +77,12 @@ class LLMService:
             '{"query": "search string", "topic": "ai", "source": "youtube"}, ...]'
         ))
 
-        response = await self._llm.ainvoke([system, human])
-        raw = _extract_json_array(response.content)
-        if raw is None:
-            logger.warning("LLM returned no valid JSON for search queries")
-            return []
-
+        response: SearchQueryList = await self._llm.with_structured_output(SearchQueryList).ainvoke([system, human])
         results: list[SearchQuery] = []
-        for item in raw:
-            if not isinstance(item, dict):
-                continue
-            query = str(item.get("query", "")).strip()
-            topic = str(item.get("topic", "")).strip()
-            source = str(item.get("source", "")).strip().lower()
-            if query and topic in topics and source in VALID_SOURCES:
-                results.append(SearchQuery(query=query, topic=topic, source=source))
+        for item in response.q:
+            item.source = item.source.lower()
+            if item.query and item.topic in topics and item.source in VALID_SOURCES:
+                results.append(item)
 
         logger.info("LLM generated %d search queries", len(results))
         return results
@@ -121,14 +118,10 @@ class LLMService:
             f"[1, 2, 3, 4, 5, 6]"
         ))
 
-        response = await self._llm.ainvoke([system, human])
-        raw = _extract_json_array(response.content)
-        if raw is None:
-            logger.warning("LLM returned no valid JSON for content selection")
-            return []
+        response = await self._llm.with_structured_output(schema=list[int]).ainvoke([system, human])
 
         valid_ids = {c.id for c in candidates}
-        selected = [int(item) for item in raw if isinstance(item, (int, float)) and int(item) in valid_ids]
+        selected = [int(item) for item in response if isinstance(item, (int, float)) and int(item) in valid_ids]
 
         # Дедупликация с сохранением порядка
         seen: set[int] = set()
@@ -141,18 +134,3 @@ class LLMService:
         logger.info("LLM selected %d content items", len(unique))
         return unique[:n]
 
-
-def _extract_json_array(text: object) -> list | None:
-    """Извлекает JSON-массив из ответа LLM."""
-    if not isinstance(text, str):
-        return None
-    match = re.search(r"\[.*]", text, re.DOTALL)
-    if not match:
-        return None
-    try:
-        data = json.loads(match.group())
-        if isinstance(data, list):
-            return data
-    except (json.JSONDecodeError, ValueError):
-        logger.warning("Failed to parse JSON from LLM response: %s", text[:200])
-    return None
