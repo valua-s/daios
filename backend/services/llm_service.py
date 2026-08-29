@@ -47,7 +47,7 @@ class LLMService:
             openai_api_key=cfg.openai_api_key.get_secret_value(),  # ty:ignore[invalid-argument-type]
             openai_api_base=cfg.openai_base_url,
             temperature=0,
-            max_tokens=1024,
+            max_completion_tokens=16000,
             http_async_client=http_client,
         )
         self._schema = {}
