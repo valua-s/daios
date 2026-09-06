@@ -1,9 +1,6 @@
 from __future__ import annotations
-import httpx
 
-import json
 import logging
-import re
 from dataclasses import dataclass
 
 import httpx
@@ -38,6 +35,11 @@ class SearchQueryList:
     q: list[SearchQuery]
 
 
+@dataclass
+class SelectedContentIds:
+    ids: list[int]
+
+
 class LLMService:
     """OpenRouter LLM wrapper — генерация поисковых запросов и выбор контента."""
 
@@ -47,7 +49,7 @@ class LLMService:
             openai_api_key=cfg.openai_api_key.get_secret_value(),  # ty:ignore[invalid-argument-type]
             openai_api_base=cfg.openai_base_url,
             temperature=0,
-            max_tokens=1024,
+            max_completion_tokens=16000,
             http_async_client=http_client,
         )
         self._schema = {}
@@ -114,14 +116,15 @@ class LLMService:
             "3. Mix of content types (articles and videos)\n"
             "4. Freshness and practical value\n\n"
             f"IMPORTANT: You MUST return EXACTLY {n} IDs. Not {n - 1}, not {n + 1}, exactly {n}.\n"
-            f"Response format — a JSON array of exactly {n} integer IDs, ordered by relevance:\n"
-            f"[1, 2, 3, 4, 5, 6]"
+            f"Response format — a JSON object with field 'ids': an array of exactly {n} "
+            "integer IDs, ordered by relevance:\n"
+            '{"ids": [1, 2, 3, 4, 5, 6]}'
         ))
 
-        response = await self._llm.with_structured_output(schema=list[int]).ainvoke([system, human])
+        response = await self._llm.with_structured_output(SelectedContentIds).ainvoke([system, human])
 
         valid_ids = {c.id for c in candidates}
-        selected = [int(item) for item in response if isinstance(item, (int, float)) and int(item) in valid_ids]
+        selected = [int(item) for item in response.ids if int(item) in valid_ids]
 
         # Дедупликация с сохранением порядка
         seen: set[int] = set()
@@ -133,4 +136,3 @@ class LLMService:
 
         logger.info("LLM selected %d content items", len(unique))
         return unique[:n]
-

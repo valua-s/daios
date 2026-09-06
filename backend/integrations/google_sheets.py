@@ -33,6 +33,9 @@ PACE_MIN = 6.0
 PACE_MAX = 6.5
 PACE_AVG = (PACE_MIN + PACE_MAX) / 2  # 6:15 — среднее
 
+# Разминка и заминка вокруг интервалов, когда общий объём не указан
+WARMUP_COOLDOWN_KM = 3.0
+
 # Длительность силовой части в минутах, когда явно не указана
 STRENGTH_MIN = 20
 STRENGTH_MAX = 30
@@ -50,8 +53,11 @@ COMBINED = "combined"
 REST = "rest"
 
 _DISCIPLINE_EMOJI = {"🏊": SWIMMING, "🚴": CYCLING, "🏃": RUNNING}
-_STRENGTH_WORDS = ("силов", "верх", "низ", "корпус")
+_STRENGTH_WORDS = ("силов", "сила", "верх", "низ", "корпус")
 _REST_WORDS = ("отдых", "rest")
+
+_INTERVAL_RE = re.compile(r"(\d+)\s*[x×хX]\s*(\d+[.,]?\d*)\s*(км)?", re.IGNORECASE)
+_RECOVERY_RE = re.compile(r"(\d+)(?:\s*[–—-]\s*(\d+))?\s*м(?![а-яёa-z])", re.IGNORECASE)
 
 
 class GoogleSheetsClient(BaseIntegration):
@@ -260,13 +266,13 @@ def _build_segment(text: str) -> dict | None:
 
 
 def _default_discipline(text: str) -> str | None:
-    if _extract_km(text) or _extract_minutes(text):
+    if _extract_km(text) or _extract_interval_km(text) or _extract_minutes(text):
         return RUNNING
     return None
 
 
 def _running_segment(text: str) -> dict:
-    km = _extract_km(text)
+    km = _extract_km(_without_intervals(text)) or _extract_interval_km(text)
     minutes = round(km * PACE_AVG) if km else (_extract_minutes(text) or 0)
     return _segment(RUNNING, text, distance_km=km or None, minutes=minutes)
 
@@ -338,6 +344,42 @@ def _extract_km(text: str) -> float:
     if len(values) > 1 and values[0] >= sum(values[1:]):
         return values[0]
     return sum(values)
+
+
+def _without_intervals(text: str) -> str:
+    return _INTERVAL_RE.sub("", text)
+
+
+def _extract_interval_km(text: str) -> float:
+    """Считает объём интервалов: отрезки, трусца между ними, разминка и заминка.
+
+    Длина отрезка без единицы измерения — метры, трусца бежится между отрезками.
+
+    "4×1200 @ 4:30–4:40, 400–500 м" → 4.8 + 3×0.45 + 3 = 9.15
+    "6×800"                         → 4.8 + 3 = 7.8
+    "5×1 км, трусца 400 м"          → 5.0 + 4×0.4 + 3 = 9.6
+    """
+    intervals = _INTERVAL_RE.findall(text)
+    if not intervals:
+        return 0.0
+
+    meters = 0.0
+    reps = 0
+    for count, length, unit in intervals:
+        meters += int(count) * float(length.replace(",", ".")) * (1000 if unit else 1)
+        reps += int(count)
+
+    meters += _extract_recovery_meters(text) * (reps - 1)
+    return round(meters / 1000 + WARMUP_COOLDOWN_KM, 2)
+
+
+def _extract_recovery_meters(text: str) -> float:
+    """Берёт длину трусцы между отрезками, диапазон усредняет: "400–500 м" → 450."""
+    match = _RECOVERY_RE.search(_without_intervals(text))
+    if not match:
+        return 0.0
+    values = [float(v) for v in match.groups() if v]
+    return sum(values) / len(values)
 
 
 def _extract_meters(text: str) -> float:
