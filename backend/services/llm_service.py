@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import cast
 
 import httpx
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
 
 from backend.core.config import Settings
 
@@ -30,13 +32,11 @@ class ContentCandidate:
     type: str  # "article" | "video"
 
 
-@dataclass
-class SearchQueryList:
+class SearchQueryList(BaseModel):
     q: list[SearchQuery]
 
 
-@dataclass
-class SelectedContentIds:
+class SelectedContentIds(BaseModel):
     ids: list[int]
 
 
@@ -79,7 +79,10 @@ class LLMService:
             '{"query": "search string", "topic": "ai", "source": "youtube"}, ...]'
         ))
 
-        response: SearchQueryList = await self._llm.with_structured_output(SearchQueryList).ainvoke([system, human])
+        response = cast(
+            "SearchQueryList",
+            await self._llm.with_structured_output(SearchQueryList).ainvoke([system, human]),
+        )
         results: list[SearchQuery] = []
         for item in response.q:
             item.source = item.source.lower()
@@ -121,7 +124,10 @@ class LLMService:
             '{"ids": [1, 2, 3, 4, 5, 6]}'
         ))
 
-        response = await self._llm.with_structured_output(SelectedContentIds).ainvoke([system, human])
+        response = cast(
+            "SelectedContentIds",
+            await self._llm.with_structured_output(SelectedContentIds).ainvoke([system, human]),
+        )
 
         valid_ids = {c.id for c in candidates}
         selected = [int(item) for item in response.ids if int(item) in valid_ids]
