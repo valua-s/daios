@@ -8,6 +8,7 @@ from litestar import Controller, get, post
 from backend.services.content_service import ContentService
 from backend.services.focus_resolver import FocusResolver
 from backend.services.llm_service import ContentCandidate, LLMService
+from backend.services.news_digest_service import NewsDigestService
 
 
 class DebugController(Controller):
@@ -71,6 +72,22 @@ class DebugController(Controller):
             "focus": focus.description,
             "queries_count": len(queries),
             "collected": collected,
+        }
+
+    @post("/news-digest")
+    async def news_digest(  # noqa: PLR6301
+        self, news_digest_service: FromDishka[NewsDigestService],
+    ) -> dict:
+        digest = await news_digest_service.build()
+        if digest is None:
+            return {"articles_count": 0, "text": ""}
+        return {
+            "articles_count": len(digest.articles),
+            "text": digest.text,
+            "sources": [
+                {"title": a.title, "url": a.url, "source": a.source, "topic": a.topic}
+                for a in digest.articles
+            ],
         }
 
     @post("/morning-content")

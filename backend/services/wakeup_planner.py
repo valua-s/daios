@@ -74,7 +74,8 @@ class WakeupPlanner:
             )
             window_end = datetime.combine(tomorrow, base, tzinfo=tz)
             try:
-                rain = await self._weather.get_forecast_rain(window_start, window_end)
+                city = await self._settings.get_city()
+                rain = await self._weather.get_forecast_rain(window_start, window_end, city)
             except Exception:
                 logger.exception("Forecast failed; defaulting tomorrow workout to evening")
                 rain = None

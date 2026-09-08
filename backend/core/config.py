@@ -102,6 +102,12 @@ class Settings(BaseSettings):
     # NewsAPI
     news_api_key: str = Field("", description="NewsAPI.org API key")
 
+    # Провайдеры новостей для сводки (пустой ключ — источник пропускается)
+    newsdata_api_key: str = Field("", description="NewsData.io API key")
+    gnews_api_key: str = Field("", description="GNews API key")
+    currents_api_key: str = Field("", description="Currents API key")
+    freenews_api_key: str = Field("", description="FreeNewsApi.io API key")
+
     # Auth (JWT)
     jwt_secret_key: SecretStr = Field(..., description="JWT signing secret")
     jwt_algorithm: str = "HS256"

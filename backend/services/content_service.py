@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.integrations.news import NewsClient
+from backend.integrations.news import NewsArticle, NewsClient
 from backend.integrations.rss import RSSParser
 from backend.integrations.vk import VKClient
 from backend.integrations.youtube import YouTubeClient
@@ -268,6 +269,34 @@ class ContentService:
 
         logger.info("Dynamic collection: saved %d new items from %d queries", saved, len(queries))
         return saved
+
+    async def filter_unseen(self, articles: list[NewsArticle]) -> list[NewsArticle]:
+        """Отсекает новости, уже лежащие в content_items. Ничего не пишет."""
+        existing = await self._repo.get_existing_urls([a.url for a in articles if a.url])
+        unseen: list[NewsArticle] = []
+        for article in articles:
+            if not article.url or article.url in existing:
+                continue
+            existing.add(article.url)
+            unseen.append(article)
+
+        logger.info("News digest: %d unseen of %d articles", len(unseen), len(articles))
+        return unseen
+
+    async def save_digest_articles(self, articles: list[NewsArticle]) -> None:
+        """Помечает новости показанными — только когда сводка действительно собрана."""
+        shown_at = datetime.now(tz=UTC).replace(tzinfo=None)
+        for article in articles:
+            await self._repo.create(
+                type=ContentType.article,
+                url=article.url,
+                title=article.title,
+                topic=article.topic,
+                source="news_digest",
+                status=ContentStatus.shown,
+                shown_at=shown_at,
+            )
+        logger.info("News digest: %d articles marked shown", len(articles))
 
     async def mark_shown(self, item_ids: list[int]) -> None:
         for item_id in item_ids:

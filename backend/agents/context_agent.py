@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from backend.agents.base import BaseAgent
 from backend.core.config import settings
 from backend.integrations.weather import WeatherClient, WeatherData
+from backend.services.settings_service import SettingsService
 
 if TYPE_CHECKING:
     from datetime import date
@@ -24,15 +25,16 @@ def _is_weekend(target_date: date) -> bool:
 class ContextAgent(BaseAgent):
     """Собирает внешний контекст дня: погоду."""
 
-    def __init__(self, weather_client: WeatherClient) -> None:
+    def __init__(self, weather_client: WeatherClient, settings_service: SettingsService) -> None:
         self._weather = weather_client
+        self._settings = settings_service
 
     async def run(self, state: dict[str, Any]) -> dict[str, Any]:
         today = datetime.now(ZoneInfo(settings.app_timezone)).date()
 
         weather: WeatherData | None = None
         try:
-            weather = await self._weather.get_current_weather()
+            weather = await self._weather.get_current_weather(await self._settings.get_city())
         except Exception:
             logger.exception("Failed to fetch weather")
 

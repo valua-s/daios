@@ -8,6 +8,7 @@ from datetime import time
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.config import settings
 from backend.models.schedule import ALLOWED_EVENT_NAMES
 from backend.repositories.settings_repo import (
     ScheduleRepository,
@@ -62,6 +63,10 @@ WAKEUP_BASE_TIME_KEY = "wakeup.base_time"
 WAKEUP_BASE_TIME_DEFAULT = "07:30"
 _TIME_RE = re.compile(r"^([01]?\d|2[0-3]):([0-5]\d)$")
 
+PROFILE_CITY_KEY = "profile.city"
+_CITY_MAX_LENGTH = 80
+_CITY_RE = re.compile(r"^[^\d<>{}\"]+$")
+
 
 def _parse_hhmm(value: str) -> time:
     m = _TIME_RE.match(value.strip())
@@ -69,6 +74,14 @@ def _parse_hhmm(value: str) -> time:
         msg = f"Invalid HH:MM time: {value!r}"
         raise ValueError(msg)
     return time(hour=int(m.group(1)), minute=int(m.group(2)))
+
+
+def _validate_city(value: str) -> str:
+    city = value.strip()
+    if not city or len(city) > _CITY_MAX_LENGTH or not _CITY_RE.match(city):
+        msg = f"Invalid city: {value!r}"
+        raise ValueError(msg)
+    return city
 
 
 class SettingsService:
@@ -126,6 +139,15 @@ class SettingsService:
     async def set_wakeup_base_time(self, value: str) -> None:
         _parse_hhmm(value)  # validate
         await self._settings.upsert(WAKEUP_BASE_TIME_KEY, value)
+
+    # ── Город ─────────────────────────────────────────────────────────────
+
+    async def get_city(self) -> str:
+        all_settings = await self._settings.get_all()
+        return all_settings.get(PROFILE_CITY_KEY) or settings.openweather_city
+
+    async def set_city(self, value: str) -> None:
+        await self._settings.upsert(PROFILE_CITY_KEY, _validate_city(value))
 
     # ── Расписание ────────────────────────────────────────────────────────
 
