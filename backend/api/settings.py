@@ -32,6 +32,16 @@ class UpdateScheduleRequest:
 
 
 @dataclass
+class CityResponseDTO:
+    city: str
+
+
+@dataclass
+class UpdateCityRequest:
+    city: str
+
+
+@dataclass
 class WakeupResponseDTO:
     base_time: str
 
@@ -119,6 +129,24 @@ class SettingsController(Controller):
             raise ClientException(detail=str(e)) from e
         t = await settings_service.get_wakeup_base_time()
         return WakeupResponseDTO(base_time=t.strftime("%H:%M"))
+
+    @get("/city")
+    async def get_city(  # noqa: PLR6301
+        self, settings_service: FromDishka[SettingsService]
+    ) -> CityResponseDTO:
+        return CityResponseDTO(city=await settings_service.get_city())
+
+    @patch("/city")
+    async def update_city(  # noqa: PLR6301
+        self,
+        data: UpdateCityRequest,
+        settings_service: FromDishka[SettingsService],
+    ) -> CityResponseDTO:
+        try:
+            await settings_service.set_city(data.city)
+        except ValueError as e:
+            raise ClientException(detail=str(e)) from e
+        return CityResponseDTO(city=await settings_service.get_city())
 
     @patch("/schedules/{event_name:str}")
     async def update_schedule(  # noqa: PLR6301

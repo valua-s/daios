@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { baseLayout } from '../layouts/base'
 import { card, sectionTitle } from '../components/card'
-import { getInterests, setInterests, getSchedules, updateSchedule, addInterest, deleteInterest, getWakeup, updateWakeup } from '../api'
+import { getInterests, setInterests, getSchedules, updateSchedule, addInterest, deleteInterest, getWakeup, updateWakeup, getCity, updateCity } from '../api'
 
 export const settingsRouter = new Hono()
 
@@ -47,6 +47,18 @@ settingsRouter.post('/wakeup', async (c) => {
   return c.redirect('/settings')
 })
 
+settingsRouter.post('/city', async (c) => {
+  const token = getCookie(c, 'daios_session')
+  const body = await c.req.parseBody()
+  const city = String(body.city ?? '').trim()
+  if (city) {
+    try {
+      await updateCity(city, token)
+    } catch {}
+  }
+  return c.redirect('/settings')
+})
+
 settingsRouter.post('/schedules/:event_name', async (c) => {
   const token = getCookie(c, 'daios_session')
   const event_name = c.req.param('event_name')
@@ -65,12 +77,14 @@ settingsRouter.get('/', async (c) => {
   let interests: Record<string, boolean>
   let schedules: Awaited<ReturnType<typeof getSchedules>>
   let wakeup: Awaited<ReturnType<typeof getWakeup>>
+  let profile: Awaited<ReturnType<typeof getCity>>
 
   try {
-    ;[interests, schedules, wakeup] = await Promise.all([
+    ;[interests, schedules, wakeup, profile] = await Promise.all([
       getInterests(token),
       getSchedules(token),
       getWakeup(token),
+      getCity(token),
     ])
   } catch (e: any) {
     return c.html(baseLayout('Settings', `<div style="padding:40px; color:#e05252;">⚠ ${e.message}</div>`, 'settings'))
@@ -186,10 +200,27 @@ settingsRouter.get('/', async (c) => {
   const content = `
     <div style="margin-bottom:28px;">
       <h1 style="margin:0; font-size:22px; font-weight:700; color:#e8e8e8;">Settings</h1>
-      <div style="font-size:13px; color:#555; margin-top:4px;">Interests and task schedule</div>
+      <div style="font-size:13px; color:#555; margin-top:4px;">Profile, interests and task schedule</div>
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;" class="settings-grid">
+      ${card(`${sectionTitle('Profile')}<div style="font-size:12px; color:#555; margin-top:-10px; margin-bottom:14px;">Personal parameters</div>
+        <form method="POST" action="/settings/city"
+              style="display:flex; align-items:center; gap:12px; padding:12px 0; flex-wrap:wrap;">
+          <div style="flex:1; min-width:160px;">
+            <div style="font-size:14px; color:#e8e8e8;">City</div>
+            <div style="font-size:11px; color:#555; margin-top:2px;">Used for weather and forecast</div>
+          </div>
+          <input type="text" name="city" value="${profile.city}" required autocomplete="off" style="
+            background:#111; border:1px solid #2a2a2a; border-radius:6px;
+            color:#e8e8e8; font-size:14px; padding:6px 10px; outline:none; min-width:0;
+          ">
+          <button type="submit" style="
+            padding:6px 14px; border-radius:6px; font-size:13px;
+            background:#1e1e1e; color:#e8e8e8; border:1px solid #2a2a2a; cursor:pointer;
+          ">Save</button>
+        </form>
+      `)}
       ${card(`${sectionTitle('Interests')}<div style="font-size:12px; color:#555; margin-top:-10px; margin-bottom:14px;">Topics for content selection</div>${interestsForm}`)}
       ${card(`${sectionTitle('Schedule')}<div style="font-size:12px; color:#555; margin-top:-10px; margin-bottom:14px;">Automated tasks</div>${schedules.map(scheduleRow).join('')}
         <form method="POST" action="/settings/wakeup"

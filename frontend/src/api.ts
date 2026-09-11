@@ -253,6 +253,19 @@ export const updateWakeup = (base_time: string, token?: string) =>
     body: JSON.stringify({ base_time }),
   }, token)
 
+export interface CityDTO {
+  city: string
+}
+
+export const getCity = (token?: string) =>
+  apiFetch<CityDTO>('/api/settings/city', undefined, token)
+
+export const updateCity = (city: string, token?: string) =>
+  apiFetch<CityDTO>('/api/settings/city', {
+    method: 'PATCH',
+    body: JSON.stringify({ city }),
+  }, token)
+
 export const addInterest = (key: string, token?: string) =>
   apiFetch<Record<string, boolean>>(`/api/settings/interests/${key}`, { method: 'POST' }, token)
 

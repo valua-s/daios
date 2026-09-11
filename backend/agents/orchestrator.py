@@ -15,7 +15,9 @@ from backend.bot.formatters import (
     format_evening_brief,
     format_evening_summary,
     format_morning_brief,
+    format_news_digest,
     format_wakeup_plan,
+    split_message,
 )
 from backend.bot.keyboards import (
     evening_postpone_all_keyboard,
@@ -23,6 +25,7 @@ from backend.bot.keyboards import (
 )
 from backend.core.config import settings
 from backend.integrations.telegram import TelegramNotifier
+from backend.services.news_digest_service import NewsDigestService
 from backend.services.task_service import TaskService
 from backend.services.wakeup_planner import WakeupPlanner
 
@@ -45,6 +48,7 @@ class Orchestrator(BaseAgent):
         task_service: TaskService,
         notifier: TelegramNotifier,
         wakeup_planner: WakeupPlanner,
+        news_digest_service: NewsDigestService,
     ) -> None:
         self._context = context_agent
         self._workout = workout_agent
@@ -54,25 +58,43 @@ class Orchestrator(BaseAgent):
         self._task_service = task_service
         self._notifier = notifier
         self._wakeup_planner = wakeup_planner
+        self._news_digest = news_digest_service
 
-    async def _run_agents(self, state: dict[str, Any]) -> dict[str, Any]:
+    @staticmethod
+    async def _run_agents(
+        state: dict[str, Any], agents: tuple[BaseAgent, ...],
+    ) -> dict[str, Any]:
         """Запускает агентов последовательно — общая DB-сессия."""
-        for agent in (self._context, self._workout, self._tasks, self._content):
+        for agent in agents:
             state = await agent.run(state)
         return state
 
     async def run(self, state: dict[str, Any]) -> dict[str, Any]:
-        """Утренняя сводка: контекст + тренировка + задачи + контент."""
-        state = await self._run_agents(state)
+        """Утренняя сводка: контекст + тренировка + задачи, затем сводка новостей."""
+        state = await self._run_agents(state, (self._context, self._workout, self._tasks))
 
         text = self.build_morning_brief(state)
         await self._notifier.send(text)
+        await self._send_news_digest()
 
         return {**state, "morning_brief": text}
 
+    async def _send_news_digest(self) -> None:
+        try:
+            digest = await self._news_digest.build()
+        except Exception:
+            logger.exception("News digest failed")
+            return
+        if digest is None:
+            return
+        for part in split_message(format_news_digest(digest.text, digest.articles)):
+            await self._notifier.send(part)
+
     async def run_evening_brief(self, state: dict[str, Any]) -> dict[str, Any]:
         """Вечерняя сводка: контекст + тренировка + задачи + контент."""
-        state = await self._run_agents(state)
+        state = await self._run_agents(
+            state, (self._context, self._workout, self._tasks, self._content),
+        )
 
         text = self.build_evening_brief(state)
         await self._notifier.send(text)
@@ -114,14 +136,12 @@ class Orchestrator(BaseAgent):
 
     @staticmethod
     def build_morning_brief(state: dict[str, Any]) -> str:
-        all_items = state.get("content_items", [])
         return format_morning_brief(
             today=datetime.now(ZoneInfo(settings.app_timezone)).date(),
             workout=state.get("workout"),
             tasks=state.get("tasks", []),
             weather=state.get("weather"),
             is_weekend=state.get("is_weekend", False),
-            content_items=all_items[:3],
         )
 
     @staticmethod

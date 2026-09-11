@@ -4,8 +4,10 @@
 """
 from __future__ import annotations
 
+from html import escape
 from typing import TYPE_CHECKING
 
+from backend.integrations.news import NewsArticle
 from backend.integrations.weather import WeatherData
 from backend.models.content import ContentItem, ContentType
 from backend.models.task import Task
@@ -16,6 +18,8 @@ from backend.services.workout_service import WorkoutPlan
 if TYPE_CHECKING:
     from datetime import date
 
+
+_TELEGRAM_LIMIT = 3900
 
 _DISCIPLINE_ICONS = {
     "running": "🏃",
@@ -87,7 +91,6 @@ def format_morning_brief(
     tasks: list[Task],
     workout: WorkoutPlan | None,
     weather: WeatherData | None = None,
-    content_items: list[ContentItem] | None = None,
     *,
     is_weekend: bool = False,
 ) -> str:
@@ -109,9 +112,6 @@ def format_morning_brief(
             lines.append(f"  {i}. {icon} {task.title}")
     else:
         lines.append("📋 Задач пока нет — добавь через /addtask")
-
-    if content_items:
-        lines.extend(["", format_content_items(content_items)])
 
     return "\n".join(lines)
 
@@ -226,3 +226,62 @@ def format_evening_summary(
         lines.extend(("", "Невыполненные задачи будут перенесены в бэклог в полночь.\nМожешь перенести на завтра, отправить в бэклог или удалить:"))
 
     return "\n".join(lines)
+
+
+def format_news_digest(text: str, articles: list[NewsArticle]) -> str:
+    lines = ["📰 <b>Сводка новостей</b>\n", escape(text)]
+    if articles:
+        lines.append("\n🔗 <b>Источники:</b>")
+        lines.extend(
+            f'{i}. <a href="{escape(a.url, quote=True)}">{escape(a.title)}</a>'
+            + (f" — {escape(a.source)}" if a.source else "")
+            for i, a in enumerate(articles, 1)
+        )
+    return "\n".join(lines)
+
+
+def split_message(text: str, limit: int = _TELEGRAM_LIMIT) -> list[str]:
+    """Режет длинный текст на части по границам абзацев и строк."""
+    if len(text) <= limit:
+        return [text]
+
+    parts: list[str] = []
+    chunk = ""
+    for block in text.split("\n\n"):
+        for line in _split_long_block(block, limit):
+            candidate = f"{chunk}\n\n{line}" if chunk else line
+            if len(candidate) <= limit:
+                chunk = candidate
+                continue
+            if chunk:
+                parts.append(chunk)
+            chunk = line
+    if chunk:
+        parts.append(chunk)
+    return parts
+
+
+def _split_long_block(block: str, limit: int) -> list[str]:
+    if len(block) <= limit:
+        return [block]
+
+    pieces: list[str] = []
+    current = ""
+    for line in block.split("\n"):
+        candidate = f"{current}\n{line}" if current else line
+        if len(candidate) <= limit:
+            current = candidate
+            continue
+        if current:
+            pieces.append(current)
+        rest = line
+        while len(rest) > limit:
+            cut = rest.rfind(" ", 0, limit)
+            if cut <= 0:
+                cut = limit
+            pieces.append(rest[:cut])
+            rest = rest[cut:].lstrip()
+        current = rest
+    if current:
+        pieces.append(current)
+    return pieces

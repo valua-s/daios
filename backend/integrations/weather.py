@@ -26,7 +26,7 @@ class WeatherClient(BaseIntegration):
     def __init__(self, http_client: httpx.AsyncClient) -> None:
         self._http = http_client
 
-    async def get_current_weather(self, city: str = settings.openweather_city) -> WeatherData:
+    async def get_current_weather(self, city: str) -> WeatherData:
         response = await self._http.get(
             BASE_URL,
             params={
@@ -50,7 +50,7 @@ class WeatherClient(BaseIntegration):
         self,
         start: datetime,
         end: datetime,
-        city: str = settings.openweather_city,
+        city: str,
     ) -> bool:
         """Проверяет, ожидается ли дождь в интервале [start, end].
 

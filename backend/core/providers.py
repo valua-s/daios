@@ -18,7 +18,14 @@ from backend.core.config import Settings, get_settings
 from backend.core.db import AsyncSessionFactory
 from backend.core.redis import create_redis
 from backend.integrations.google_sheets import GoogleSheetsClient
-from backend.integrations.news import NewsClient
+from backend.integrations.news import (
+    CurrentsProvider,
+    FreeNewsProvider,
+    GNewsProvider,
+    HackerNewsProvider,
+    NewsClient,
+    NewsDataProvider,
+)
 from backend.integrations.rss import RSSParser
 from backend.integrations.strava import StravaClient, build_http_client
 from backend.integrations.telegram import TelegramNotifier
@@ -37,6 +44,7 @@ from backend.services.diary_service import DiaryService
 from backend.services.focus_resolver import FocusResolver
 from backend.services.focus_service import FocusService
 from backend.services.llm_service import LLMService
+from backend.services.news_digest_service import NewsDigestService
 from backend.services.note_service import NoteService
 from backend.services.settings_service import SettingsService
 from backend.services.stats_service import StatsService
@@ -96,6 +104,26 @@ class AppProvider(Provider):
     @provide(scope=Scope.APP)
     def get_news_client(self, http_client: httpx.AsyncClient, cfg: Settings) -> NewsClient:  # noqa: PLR6301
         return NewsClient(http_client, cfg.news_api_key)
+
+    @provide(scope=Scope.APP)
+    def get_hacker_news_provider(self, http_client: httpx.AsyncClient) -> HackerNewsProvider:  # noqa: PLR6301
+        return HackerNewsProvider(http_client)
+
+    @provide(scope=Scope.APP)
+    def get_newsdata_provider(self, http_client: httpx.AsyncClient, cfg: Settings) -> NewsDataProvider:  # noqa: PLR6301
+        return NewsDataProvider(http_client, cfg.newsdata_api_key)
+
+    @provide(scope=Scope.APP)
+    def get_gnews_provider(self, http_client: httpx.AsyncClient, cfg: Settings) -> GNewsProvider:  # noqa: PLR6301
+        return GNewsProvider(http_client, cfg.gnews_api_key)
+
+    @provide(scope=Scope.APP)
+    def get_currents_provider(self, http_client: httpx.AsyncClient, cfg: Settings) -> CurrentsProvider:  # noqa: PLR6301
+        return CurrentsProvider(http_client, cfg.currents_api_key)
+
+    @provide(scope=Scope.APP)
+    def get_freenews_provider(self, http_client: httpx.AsyncClient, cfg: Settings) -> FreeNewsProvider:  # noqa: PLR6301
+        return FreeNewsProvider(http_client, cfg.freenews_api_key)
 
     @provide(scope=Scope.APP)
     async def get_llm_service(self, cfg: Settings) -> AsyncIterator[LLMService]:  # noqa: PLR6301
@@ -188,8 +216,12 @@ class AppProvider(Provider):
         return StravaService(session, completed_repo, strava_client)
 
     @provide(scope=Scope.REQUEST)
-    def get_context_agent(self, weather_client: WeatherClient) -> ContextAgent:  # noqa: PLR6301
-        return ContextAgent(weather_client)
+    def get_context_agent(  # noqa: PLR6301
+        self,
+        weather_client: WeatherClient,
+        settings_service: SettingsService,
+    ) -> ContextAgent:
+        return ContextAgent(weather_client, settings_service)
 
     @provide(scope=Scope.REQUEST)
     def get_task_agent(self, task_service: TaskService) -> TaskAgent:  # noqa: PLR6301
@@ -217,6 +249,25 @@ class AppProvider(Provider):
         settings_service: SettingsService,
     ) -> FocusResolver:
         return FocusResolver(focus_service, settings_service)
+
+    @provide(scope=Scope.REQUEST)
+    def get_news_digest_service(  # noqa: PLR6301
+        self,
+        hacker_news: HackerNewsProvider,
+        newsdata: NewsDataProvider,
+        gnews: GNewsProvider,
+        currents: CurrentsProvider,
+        freenews: FreeNewsProvider,
+        content_service: ContentService,
+        focus_resolver: FocusResolver,
+        llm_service: LLMService,
+    ) -> NewsDigestService:
+        return NewsDigestService(
+            [hacker_news, newsdata, gnews, currents, freenews],
+            content_service,
+            focus_resolver,
+            llm_service,
+        )
 
     @provide(scope=Scope.REQUEST)
     def get_content_agent(  # noqa: PLR6301
@@ -253,9 +304,10 @@ class AppProvider(Provider):
         task_service: TaskService,
         notifier: TelegramNotifier,
         wakeup_planner: WakeupPlanner,
+        news_digest_service: NewsDigestService,
     ) -> Orchestrator:
         return Orchestrator(
             context_agent, workout_agent, task_agent,
             content_agent, evening_agent, task_service, notifier,
-            wakeup_planner,
+            wakeup_planner, news_digest_service,
         )
